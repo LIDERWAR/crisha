@@ -15,11 +15,11 @@ function preventDefaults(e) {
 }
 
 ['dragenter', 'dragover'].forEach(eventName => {
-    dropZone.addEventListener(eventName, () => dropZone.classList.add('border-primary'));
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('border-brand-orange', 'bg-white/10'));
 });
 
 ['dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-primary'));
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-brand-orange', 'bg-white/10'));
 });
 
 dropZone.addEventListener('drop', handleDrop);
@@ -73,6 +73,26 @@ async function uploadFile(file) {
         loadingState.classList.add('hidden');
     }
 }
+
+// Scroll Reveal Animation
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            observer.unobserve(entry.target); // Animate once
+        }
+    });
+}, observerOptions);
+
+document.addEventListener('DOMContentLoaded', () => {
+    const hiddenElements = document.querySelectorAll('.reveal');
+    hiddenElements.forEach((el) => observer.observe(el));
+});
 
 function displayResults(data) {
     // Show Results Section
