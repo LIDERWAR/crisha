@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crisha.Scope - AI Аудит Договоров</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Unbounded', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#6366f1', // Indigo 500
+                        secondary: '#ec4899', // Pink 500
+                        dark: '#0f172a', // Slate 900
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-white min-h-screen flex flex-col font-sans">
+    
+    <!-- Navbar -->
+    <nav class="w-full py-6 px-8 flex justify-between items-center border-b border-white/10 glass-nav">
+        <div class="text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+            Crisha.Scope
+        </div>
+        <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
+            <a href="#" class="hover:text-white transition">Как это работает</a>
+            <a href="#" class="hover:text-white transition">Цены</a>
+            <a href="#" class="hover:text-white transition">Контакты</a>
+        </div>
+        <button class="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-full text-sm font-medium transition backdrop-blur-md border border-white/5">
+            Войти
+        </button>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="flex-grow flex flex-col items-center justify-center text-center px-4 py-20 relative overflow-hidden">
+        
+        <!-- Background Gradients -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-0 right-0 w-[600px] h-[400px] bg-secondary/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-4xl">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 mb-8 backdrop-blur-sm">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                AI-юрист доступен 24/7
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl font-display font-bold leading-tight mb-6">
+                Найдем скрытые риски в вашем договоре за <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">30 секунд</span>
+            </h1>
+            
+            <p class="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+                Загрузите договор аренды или купли-продажи. Нейросеть проанализирует каждый пункт и покажет, где вас пытаются обмануть.
+            </p>
+
+            <!-- Upload Zone -->
+            <div id="drop-zone" class="w-full max-w-xl mx-auto bg-white/5 border-2 border-dashed border-white/20 rounded-3xl p-12 transition-all duration-300 hover:border-primary/50 hover:bg-white/10 group cursor-pointer relative">
+                
+                <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf">
+                
+                <div class="flex flex-col items-center justify-center gap-4 transition-transform group-hover:scale-105">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-lg font-medium text-white mb-1">Перетащите PDF сюда</p>
+                        <p class="text-sm text-gray-500">или нажмите для выбора файла</p>
+                    </div>
+                </div>
+
+                <!-- Loading State (Hidden by default) -->
+                <div id="loading-state" class="hidden absolute inset-0 bg-dark/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center z-20">
+                    <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-white font-medium animate-pulse">Анализируем документ...</p>
+                </div>
+            </div>
+
+            <p class="mt-6 text-sm text-gray-500">
+                🔒 Ваши данные зашифрованы и удаляются сразу после анализа.
+            </p>
+        </div>
+    </main>
+
+    <!-- Results Modal / Section (Hidden initially) -->
+    <div id="results-section" class="hidden fixed inset-0 z-50 bg-dark/95 backdrop-blur-xl overflow-y-auto">
+        <div class="min-h-screen px-4 py-8 flex items-center justify-center">
+            <div class="w-full max-w-4xl bg-[#1e293b] rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative">
+                
+                <!-- Close Button -->
+                <button id="close-results" class="absolute top-6 right-6 text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+
+                <div class="p-8 md:p-12">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 class="text-3xl font-display font-bold text-white mb-2">Результат Аудита</h2>
+                            <p class="text-gray-400">Проверка завершена за 1.2 сек</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <div class="text-sm text-gray-400">Оценка безопасности</div>
+                                <div id="score-value" class="text-4xl font-bold text-green-400">85/100</div>
+                            </div>
+                            <div class="w-16 h-16 rounded-full border-4 border-green-400 flex items-center justify-center text-green-400">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Summary -->
+                        <div class="bg-white/5 rounded-2xl p-6 border border-white/5">
+                            <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                                <span class="bg-blue-500/20 text-blue-400 p-1 rounded-lg">🤖</span>
+                                Вердикт AI
+                            </h3>
+                            <p id="summary-text" class="text-gray-300 leading-relaxed">
+                                Договор в целом стандартный, но содержит пункт о праве арендодателя поднять цену без уведомления. Рекомендуется пересмотреть пункт 4.2.
+                            </p>
+                        </div>
+
+                        <!-- Risks -->
+                        <div>
+                            <h3 class="text-lg font-bold text-white mb-4">Найденные риски</h3>
+                            <div id="risks-container" class="space-y-4">
+                                <!-- Risk Item Template -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-8 border-t border-white/10 flex justify-end gap-4">
+                        <button class="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition border border-white/5">
+                            Скачать PDF
+                        </button>
+                        <button class="px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-medium transition shadow-lg shadow-primary/20 hover:shadow-primary/40">
+                            Консультация юриста
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
