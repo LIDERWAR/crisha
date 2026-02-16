@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный Кабинет - Crisha.Scope</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/custom.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Unbounded', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            orange: '#FF8C42',
+                            red: '#FF2E2E',
+                            dark: '#050505',
+                            card: '#0A0A0B',
+                            light: '#E2E2E2'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-brand-dark text-brand-light min-h-screen font-sans selection:bg-brand-orange/30 flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 glass-header border-r border-white/5 hidden md:flex flex-col justify-between p-6 z-20">
+        <div>
+            <!-- Logo -->
+            <a href="index.html"
+                class="block text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-red mb-10">
+                Crisha.Scope
+            </a>
+
+            <!-- Nav Links -->
+            <nav class="space-y-2">
+                <a href="#"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/10 text-white font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                        </path>
+                    </svg>
+                    Обзор
+                </a>
+                <a href="#"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    Мои договоры
+                </a>
+                <a href="index.html#pricing"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z">
+                        </path>
+                    </svg>
+                    Оплата и тарифы
+                </a>
+                <a href="#"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Настройки
+                </a>
+            </nav>
+        </div>
+
+        <!-- User Profile -->
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/5">
+            <div
+                class="w-10 h-10 rounded-full bg-brand-orange/20 flex items-center justify-center text-brand-orange font-bold">
+                S
+            </div>
+            <div class="overflow-hidden">
+                <div class="text-sm font-bold text-white truncate user-name-display">Sergey</div>
+                <div class="text-xs text-brand-orange truncate user-email-display">Free Plan</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 relative overflow-y-auto h-screen p-4 md:p-8">
+
+        <!-- Background Gradients -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+            <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-orange/5 rounded-full blur-[120px]"></div>
+        </div>
+
+        <!-- Header (Mobile) -->
+        <div class="md:hidden flex justify-between items-center mb-8">
+            <div
+                class="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-red">
+                Crisha.Scope
+            </div>
+            <button class="text-white p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Content Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">Обзор</h1>
+                <p class="text-gray-400">Добро пожаловать обратно, Сергей!</p>
+            </div>
+            <a href="index.html#how-it-works"
+                class="bg-gradient-to-r from-brand-orange to-brand-red text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-brand-orange/20 hover:shadow-brand-orange/40 transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Новая проверка
+            </a>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Balance Card -->
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 rounded-lg bg-orange-500/20 text-brand-orange">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold bg-white/10 text-white px-2 py-1 rounded-full">Тариф Free</span>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1">2</div>
+                <div class="text-sm text-gray-400">Осталось проверок</div>
+            </div>
+
+            <!-- Risks found -->
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 rounded-lg bg-red-500/20 text-red-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1">12</div>
+                <div class="text-sm text-gray-400">Рисков найдено (все время)</div>
+            </div>
+
+            <!-- Documents -->
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 rounded-lg bg-blue-500/20 text-blue-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-white mb-1" id="docs-count">0</div>
+                <div class="text-sm text-gray-400">Проверено документов</div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Table -->
+        <div class="glass-header rounded-3xl overflow-hidden border border-white/5">
+            <div class="p-6 border-b border-white/5 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white">Недавние проверки</h3>
+                <a href="#" class="text-brand-orange text-sm hover:text-white transition">Смотреть все</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left" id="documents-table">
+                    <thead class="bg-white/5 text-gray-400 text-xs uppercase font-bold">
+                        <tr>
+                            <th class="px-6 py-4">Документ</th>
+                            <th class="px-6 py-4">Дата</th>
+                            <th class="px-6 py-4">Оценка</th>
+                            <th class="px-6 py-4">Статус</th>
+                            <th class="px-6 py-4 text-right">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm text-gray-300">
+                        <tr class="table-row-static border-b border-white/5">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded bg-red-500/20 text-red-500 flex items-center justify-center font-bold text-xs">
+                                        PDF</div>
+                                    <span class="font-medium text-white">Договор аренды #42.pdf</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">16 Фев 2026</td>
+                            <td class="px-6 py-4">
+                                <span class="text-red-400 font-bold">45/100</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span
+                                    class="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs font-bold">Готово</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-gray-400 hover:text-white transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="table-row-static border-b border-white/5">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded bg-red-500/20 text-red-500 flex items-center justify-center font-bold text-xs">
+                                        PDF</div>
+                                    <span class="font-medium text-white">Договор подряда (Иванов).pdf</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">15 Фев 2026</td>
+                            <td class="px-6 py-4">
+                                <span class="text-green-400 font-bold">88/100</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span
+                                    class="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs font-bold">Готово</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-gray-400 hover:text-white transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+
+</html>

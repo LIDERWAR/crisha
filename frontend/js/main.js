@@ -52,9 +52,16 @@ async function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
 
+    const token = localStorage.getItem('crisha_token');
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Token ${token}`;
+    }
+
     try {
         const response = await fetch('http://localhost:8000/api/analyze/', {
             method: 'POST',
+            headers: headers,
             body: formData
         });
 

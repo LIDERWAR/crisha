@@ -42,7 +42,7 @@
     <!-- Navbar -->
     <!-- Navbar -->
     <nav
-        class="w-full py-6 px-4 md:px-8 flex justify-between items-center border-b border-white/5 glass-card sticky top-0 z-50">
+        class="w-full py-6 px-4 md:px-8 flex justify-between items-center border-b border-white/5 glass-header sticky top-0 z-50">
         <div
             class="text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-red pointer-events-none select-none">
             Crisha.Scope
@@ -52,10 +52,10 @@
             <a href="#pricing" class="hover:text-white transition">Цены</a>
             <a href="#" class="hover:text-white transition">Контакты</a>
         </div>
-        <button
+        <a href="login.html"
             class="bg-white/5 hover:bg-white/10 text-white px-5 py-2 rounded-full text-sm font-medium transition backdrop-blur-md border border-white/5 hover:border-brand-orange/30">
             Войти
-        </button>
+        </a>
     </nav>
 
     <!-- Hero Section -->
@@ -287,10 +287,10 @@
                         </li>
                     </ul>
 
-                    <button
-                        class="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition border border-white/5">
+                    <a href="register.html"
+                        class="block text-center w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition border border-white/5">
                         Попробовать
-                    </button>
+                    </a>
                 </div>
 
                 <!-- Growth (Highlighted) -->
@@ -328,10 +328,10 @@
                         </li>
                     </ul>
 
-                    <button
-                        class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-red text-white font-medium transition shadow-lg shadow-brand-orange/20 hover:shadow-brand-orange/40">
+                    <a href="register.html"
+                        class="block text-center w-full py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-red text-white font-medium transition shadow-lg shadow-brand-orange/20 hover:shadow-brand-orange/40">
                         Выбрать PRO
-                    </button>
+                    </a>
                 </div>
 
                 <!-- Enterprise -->
@@ -368,10 +368,10 @@
                         </li>
                     </ul>
 
-                    <button
-                        class="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition border border-white/5">
+                    <a href="mailto:support@crisha.ru"
+                        class="block text-center w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition border border-white/5">
                         Связаться
-                    </button>
+                    </a>
                 </div>
             </div>
         </section>
@@ -456,7 +456,20 @@
         </div>
     </div>
 
+    <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = auth.getToken();
+            if (token) {
+                const navBtn = document.querySelector('nav a[href="login.html"]');
+                if (navBtn) {
+                    navBtn.textContent = 'Кабинет';
+                    navBtn.href = 'dashboard.html';
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>

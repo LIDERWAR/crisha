@@ -9,6 +9,23 @@
     }
 
     /* Top Gradient Line via Pseudo-element */
+    .glass-header {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        position: relative;
+        /* No hover animations */
+    }
+
+    .table-row-static {
+        transition: background-color 0.2s ease;
+    }
+
+    .table-row-static:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
     /* Top Gradient Line via Pseudo-element (Featured Only) */
     .glass-card.featured::before {
         content: '';
@@ -66,6 +83,7 @@
     .orange-gradient-text {
         background: linear-gradient(135deg, #FF8C42 0%, #FF2E2E 100%);
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
     }
 
