@@ -37,11 +37,20 @@ function handleDrop(e) {
 }
 
 function handleFiles(e) {
-    const file = e.target.files[0];
-    if (file && file.type === 'application/pdf') {
-        uploadFile(file);
+    console.log('handleFiles triggered', e);
+    const file = e.target.files ? e.target.files[0] : (e.dataTransfer ? e.dataTransfer.files[0] : null);
+
+    console.log('Selected file:', file);
+
+    if (file) {
+        // Simple check for PDF based on extension OR mime type
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+            uploadFile(file);
+        } else {
+            alert('Пожалуйста, загрузите PDF файл. (Тип файла: ' + file.type + ')');
+        }
     } else {
-        alert('Пожалуйста, загрузите PDF файл.');
+        console.error('No file found in event');
     }
 }
 
@@ -58,8 +67,15 @@ async function uploadFile(file) {
         headers['Authorization'] = `Token ${token}`;
     }
 
+    console.log('Upload details:', {
+        url: 'http://127.0.0.1:8000/api/analyze/',
+        headers: headers,
+        tokenExists: !!token,
+        fileSize: file.size
+    });
+
     try {
-        const response = await fetch('http://localhost:8000/api/analyze/', {
+        const response = await fetch('http://127.0.0.1:8000/api/analyze/', {
             method: 'POST',
             headers: headers,
             body: formData
@@ -67,6 +83,7 @@ async function uploadFile(file) {
 
         if (!response.ok) {
             const errorText = await response.text();
+            console.error('Raw Server Error Response:', errorText);
             throw new Error(`Server error: ${response.status} - ${errorText}`);
         }
 
@@ -74,10 +91,24 @@ async function uploadFile(file) {
         displayResults(data);
 
     } catch (error) {
-        console.error('Error:', error);
-        alert('Ошибка при анализе файла: ' + error.message);
+        console.error('Frontend Error:', error);
+
+        // Show error in the loading state area (non-blocking)
+        const loadingDiv = document.getElementById('loading-state');
+        loadingDiv.classList.remove('hidden');
+        loadingDiv.innerHTML = `
+            <div class="text-red-500 font-bold mb-2">Ошибка!</div>
+            <div class="text-xs text-red-400 text-center px-4">${error.message}</div>
+            <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-white/10 rounded-lg text-xs hover:bg-white/20">Попробовать снова</button>
+        `;
+
+        // alert('Ошибка при анализе файла: ' + error.message);
     } finally {
-        loadingState.classList.add('hidden');
+        // We don't hide loading state on error so user can see the message
+        // loadingState.classList.add('hidden'); 
+        if (!document.getElementById('loading-state').innerHTML.includes('Ошибка!')) {
+            loadingState.classList.add('hidden');
+        }
     }
 }
 

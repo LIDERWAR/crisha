@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test Upload</title>
+</head>
+
+<body>
+    <h1>API Test</h1>
+    <input type="file" id="fileInput">
+    <button onclick="upload()">Upload</button>
+    <div id="output"></div>
+
+    <script>
+        async function upload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) return alert('Select a file');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const token = localStorage.getItem('crisha_token');
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Token ${token}`;
+            } else {
+                alert('No token in localStorage! Login first in the main app.');
+                return;
+            }
+
+            try {
+                document.getElementById('output').textContent = 'Uploading...';
+                const response = await fetch('http://127.0.0.1:8000/api/analyze/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('output').textContent = e.toString();
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+
+</html>
