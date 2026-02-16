@@ -88,7 +88,19 @@ async function uploadFile(file) {
         }
 
         const data = await response.json();
-        displayResults(data);
+
+        // Show success and redirect
+        const loadingDiv = document.getElementById('loading-state');
+        loadingDiv.innerHTML = `
+            <div class="text-green-500 font-bold mb-2">Готово!</div>
+            <div class="text-xs text-green-400 text-center px-4">Переходим в кабинет...</div>
+        `;
+
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 1500);
+
+        // displayResults(data);
 
     } catch (error) {
         console.error('Frontend Error:', error);
