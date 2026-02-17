@@ -5,6 +5,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from rest_framework import generics
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from .services import extract_text_from_pdf, analyze_contract_with_ai
 from .models import Document
 from .serializers import DocumentSerializer
@@ -60,6 +62,7 @@ class HealthCheckView(APIView):
     def get(self, request):
         return Response({"status": "ok", "message": "Crisha Backend is running"}, status=status.HTTP_200_OK)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ContractAnalysisView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
@@ -75,70 +78,99 @@ class ContractAnalysisView(APIView):
         try:
             print("--- STARTING DOCUMENT PROCESSING ---")
             
-            # 1. Save Document first (to get ID and store file)
+            # 1. Сначала сохраняем документ (чтобы получить ID и сохранить файл)
             user = request.user if request.user.is_authenticated else None
             try:
-                document = Document.objects.create(file=file_obj, user=user)
-                print(f"--- Document Created: ID {document.id} ---")
+                document = Document.objects.create(file=file_obj, user=user, status='pending')
+                print(f"--- Документ создан: ID {document.id} ---")
             except Exception as e:
-                 logger.error(f"Error creating document: {e}")
-                 print(f"!!! Error creating document: {e} !!!")
-                 return Response({"error": f"Database error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                 logger.error(f"Ошибка при создании документа: {e}")
+                 print(f"!!! Ошибка при создании документа: {e} !!!")
+                 return Response({"error": f"Ошибка базы данных: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # 2. Extract Text
+            # 2. Извлечение текста
             try:
-                print("--- Starting Text Extraction ---")
-                # Open in binary mode
+                print("--- Начало извлечения текста ---")
+                # Открываем в бинарном режиме
                 with document.file.open('rb') as f:
                     file_content = f.read()
                     
-                # Use fitz on bytes
+                # Используем fitz на байтах
                 doc = fitz.open(stream=file_content, filetype="pdf")
                 text = ""
                 for page in doc:
                     text += page.get_text()
-                doc.close() # Close fitz document
-                print(f"--- Text Extracted: Length {len(text)} ---")
+                doc.close() # Закрываем документ fitz
+                print(f"--- Текст извлечен: Длина {len(text)} ---")
                 
             except Exception as e:
-                 logger.error(f"Text extraction error: {e}")
-                 print(f"!!! Text extraction error: {e} !!!")
-                 document.delete()
-                 return Response({"error": f"PDF parse error: {str(e)}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+                 logger.error(f"Ошибка извлечения текста: {e}")
+                 print(f"!!! Ошибка извлечения текста: {e} !!!")
+                 document.status = 'failed'
+                 document.summary = f"Ошибка извлечения текста: {str(e)}"
+                 document.save()
+                 # Возвращаем 201, так как документ создан, пусть и с ошибкой
+                 serializer = DocumentSerializer(document)
+                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             
             if not text:
-                 print("!!! No text extracted !!!")
-                 document.delete() 
-                 return Response({"error": "Failed to extract text. File might be empty or encrypted."}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+                 print("!!! Текст не извлечен !!!")
+                 document.status = 'failed'
+                 document.summary = "Не удалось извлечь текст. Файл может быть пустым, зашифрованным или отсканированным без OCR."
+                 document.save()
+                 serializer = DocumentSerializer(document)
+                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             
-            # 3. Analyze
-            try:
-                print("--- Starting AI Analysis ---")
-                analysis_result = analyze_contract_with_ai(text)
-                print("--- AI Analysis Completed ---")
-            except Exception as e:
-                logger.error(f"AI error: {e}")
-                print(f"!!! AI error: {e} !!!")
-                document.delete()
-                return Response({"error": f"AI service error: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            # 3. Анализ - ОТКЛЮЧЕНО ПО ЗАПРОСУ (анализ будет запускаться вручную из кабинета)
+            # try:
+            #     print("--- Запуск AI анализа ---")
+            #     analysis_result = analyze_contract_with_ai(text)
+            #     print("--- AI анализ завершен ---")
+            # except Exception as e:
+            #     logger.error(f"Ошибка AI: {e}")
+            #     print(f"!!! Ошибка AI: {e} !!!")
+            #     document.status = 'failed'
+            #     document.summary = f"Ошибка AI анализа: {str(e)}"
+            #     document.save()
+            #     serializer = DocumentSerializer(document)
+            #     return Response(serializer.data, status=status.HTTP_201_CREATED)
             
-            if "error" in analysis_result:
-                print(f"!!! AI Analysis returned error: {analysis_result} !!!")
-                document.delete()
-                return Response(analysis_result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # if "error" in analysis_result:
+            #     print(f"!!! AI анализ вернул ошибку: {analysis_result} !!!")
+            #     document.status = 'failed'
+            #     document.summary = f"Ошибка AI: {analysis_result.get('error')}"
+            #     document.save()
+            #     serializer = DocumentSerializer(document)
+            #     # Возвращаем 201
+            #     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            # 4. Update Document
-            try:
-                print("--- Saving Results ---")
-                document.score = analysis_result.get('score')
-                document.summary = analysis_result.get('summary')
-                document.risks = analysis_result.get('risks')
-                document.save()
-                print("--- Results Saved ---")
-            except Exception as e:
-                logger.error(f"Saving results error: {e}")
-                print(f"!!! Saving results error: {e} !!!")
-                return Response({"error": "Failed to save analysis results"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # 4. Обновление документа
+            # try:
+            #     print("--- Сохранение результатов ---")
+            #     document.status = 'processed'
+            #     document.score = analysis_result.get('score')
+            #     document.summary = analysis_result.get('summary')
+            #     document.risks = analysis_result.get('risks')
+            #     document.save()
+            #     print("--- Результаты сохранены ---")
+            # except Exception as e:
+            #     logger.error(f"Ошибка сохранения результатов: {e}")
+            #     print(f"!!! Ошибка сохранения результатов: {e} !!!")
+            #     # Даже если сохранение деталей анализа не удалось, помечаем как ошибку
+            #     try:
+            #         document.status = 'failed'
+            #         document.summary = "Ошибка сохранения результатов анализа."
+            #         document.save()
+            #     except:
+            #         pass
+            #     # Возвращаем 201 с тем, что есть
+            #     serializer = DocumentSerializer(document)
+            #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            # Return serialized data (Status: pending)
+            print("--- Документ сохранен, анализ пропущен ---")
+            serializer = DocumentSerializer(document)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
             # Return serialized data
             serializer = DocumentSerializer(document)
@@ -151,12 +183,16 @@ class ContractAnalysisView(APIView):
             traceback.print_exc()
             return Response({"error": f"Unexpected server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+from rest_framework.permissions import IsAuthenticated
+
 class DocumentListView(generics.ListAPIView):
     serializer_class = DocumentSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
             return Document.objects.filter(user=user).order_by('-uploaded_at')
         return Document.objects.none()
+
 

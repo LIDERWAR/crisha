@@ -210,6 +210,8 @@
                     <!-- Mini Upload Zone -->
                     <div id="drop-zone"
                         class="w-full h-48 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 hover:border-brand-orange transition group/upload relative">
+                        <input type="file" id="file-input"
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".pdf">
                         <div
                             class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-2 group-hover/upload:scale-110 transition">
                             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,17 +229,7 @@
                             </div>
                             <span class="text-xs text-brand-orange animate-pulse">Анализ...</span>
                         </div>
-
-                        <!-- File Input - В САМОМ КОНЦЕ для z-index поверх всех -->
-                        <input type="file" id="file-input"
-                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30" accept=".pdf">
                     </div>
-
-                    <!-- ЗАПАСНОЙ ВАРИАНТ: Видимая кнопка -->
-                    <button type="button" onclick="document.getElementById('file-input').click()"
-                        class="mt-4 px-6 py-3 bg-gradient-to-r from-brand-orange to-brand-red text-white font-bold rounded-xl hover:scale-105 transition">
-                        Или нажмите здесь чтобы выбрать PDF
-                    </button>
                 </div>
 
                 <!-- Step 2: Analysis -->
@@ -464,156 +456,19 @@
         </div>
     </div>
 
-    <script defer src="js/auth.js"></script>
-
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Function to log to console only
-            function log(msg, type = 'info') {
-                if (type === 'error') console.error(msg);
-                else console.log(msg);
-            }
-
-            log('>>> INLINE SCRIPT LOADED');
-
-            // Log Environment
-            log(`Location: ${window.location.href}`);
-            log(`Origin: ${window.location.origin}`);
-
-            // HEALTH CHECK
-            log('Checking backend health...');
-            fetch('http://127.0.0.1:8000/api/health/')
-                .then(r => {
-                    log(`Health Check: ${r.status} ${r.statusText}`);
-                    return r.json().catch(() => ({}));
-                })
-                .then(d => log(`Health Data: ${JSON.stringify(d)}`))
-                .catch(e => log(`Health Check FAILED: ${e.message}`, 'error'));
-
-            // Auth logic
-            let token = null;
-            try {
-                if (typeof auth === 'undefined') {
-                    log('ERROR: auth object is undefined!', 'error');
-                } else {
-                    token = auth.getToken();
-                    log(`Token present: ${!!token}`);
-                }
-            } catch (e) {
-                log(`Auth check error: ${e.message}`, 'error');
-            }
-
+            const token = auth.getToken();
             if (token) {
                 const navBtn = document.querySelector('nav a[href="login.html"]');
                 if (navBtn) {
                     navBtn.textContent = 'Кабинет';
-                    navBtn.href = '/frontend/dashboard.html';
+                    navBtn.href = 'dashboard.html';
                 }
             }
-
-            // UPLOAD LOGIC FROM TEST-INPUT.HTML
-            const dropZone = document.getElementById('drop-zone');
-            const fileInput = document.getElementById('file-input');
-            const loadingState = document.getElementById('loading-state');
-
-            console.log(`>>> Elements: dropZone=${!!dropZone}, fileInput=${!!fileInput}, loadingState=${!!loadingState}`);
-
-            if (!fileInput) {
-                console.error('>>> ОШИБКА: fileInput не найден!');
-                return;
-            }
-
-            // Force file input to be clickable
-            fileInput.style.display = 'block';
-            fileInput.style.opacity = '0';
-            fileInput.style.position = 'absolute';
-            fileInput.style.inset = '0';
-            fileInput.style.zIndex = '100';
-
-            // PREVENT BUBBLING AND DEFAULT ACTIONS
-            fileInput.addEventListener('click', (e) => {
-                e.stopPropagation();
-                // Don't preventDefault on click, or file dialog won't open!
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                e.stopPropagation();
-                e.preventDefault(); // Stop any form submission if present
-                console.log('>>> CHANGE EVENT FIRED');
-
-                const file = e.target.files[0];
-                if (file && file.type === 'application/pdf') {
-                    uploadFile(file);
-                } else {
-                    alert('Пожалуйста, выберите PDF файл');
-                }
-            });
-
-            async function uploadFile(file) {
-                log(`>>> STARTING UPLOAD: ${file.name} (${file.size} bytes)`);
-                if (loadingState) loadingState.classList.remove('hidden');
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    log(`Fetching http://127.0.0.1:8000/api/analyze/...`);
-                    const response = await fetch('http://127.0.0.1:8000/api/analyze/', {
-                        method: 'POST',
-                        body: formData,
-                        mode: 'cors',
-                        cache: 'no-store',
-                        headers: {
-                            'Accept': 'application/json',
-                        }
-                    });
-
-                    log(`Response status: ${response.status}`);
-
-                    if (response.ok) {
-                        log('>>> UPLOAD SUCCESS');
-                        const data = await response.json();
-                        log(`Response data: ${JSON.stringify(data).substring(0, 100)}...`);
-
-                        if (loadingState) {
-                            loadingState.innerHTML = `
-                                <div class="text-green-500 font-bold text-xl">✓ Файл загружен!</div>
-                            `;
-                        }
-
-                        setTimeout(() => {
-                            log('>>> REDIRECTING...');
-                            window.location.href = '/frontend/dashboard.html';
-                        }, 1000);
-                    } else {
-                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-                    }
-                } catch (error) {
-                    log(`>>> UPLOAD ERROR: ${error.name}: ${error.message}`, 'error');
-                    console.error('>>> UPLOAD ERROR:', error);
-                    alert('Ошибка: ' + error.message);
-                    if (loadingState) loadingState.classList.add('hidden');
-                }
-            }
-
-            // --- Scroll Animations Restoration ---
-            const reveals = document.querySelectorAll('.reveal');
-            function checkScroll() {
-                reveals.forEach(el => {
-                    const rect = el.getBoundingClientRect();
-                    // trigger slightly earlier
-                    if (rect.top < window.innerHeight - 50) {
-                        el.classList.add('visible');
-                    }
-                });
-            }
-            window.addEventListener('scroll', checkScroll);
-            // Run immediately
-            setTimeout(checkScroll, 100);
-            checkScroll();
-
         });
-
     </script>
 </body>
 

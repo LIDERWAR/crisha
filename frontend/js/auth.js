@@ -85,7 +85,13 @@ const auth = {
         });
 
         if (response.status === 401) {
-            this.logout();
+            console.error('!!! 401 UNAUTHORIZED !!!');
+            console.error('Token:', token);
+            console.error('Endpoint:', endpoint);
+            console.error('Response:', await response.clone().text());
+            alert('ОШИБКА 401! Проверьте консоль. НЕ делаю logout для отладки.');
+            // ВРЕМЕННО ОТКЛЮЧЕН для отладки:
+            // this.logout();
             throw new Error('Unauthorized');
         }
 

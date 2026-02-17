@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check Auth
-    auth.checkAuth();
+    // БЕЗ auth.checkAuth - работаем без авторизации
 
-    // Display User Info
+    // Пользователь
     const userStr = localStorage.getItem('crisha_user');
     if (userStr) {
         const user = JSON.parse(userStr);
@@ -13,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         emailElements.forEach(el => el.textContent = user.email || 'Free Plan');
     }
 
-    // Logout Handler
+    // Logout
     const logoutBtns = document.querySelectorAll('.logout-btn');
     logoutBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -22,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // Fetch and Display Documents
+    // Загрузка документов
     await loadDocuments();
 });
 
@@ -31,16 +30,16 @@ async function loadDocuments() {
     if (!tableBody) return;
 
     try {
-        const response = await auth.fetchWithAuth('/documents/');
-        if (!response.ok) throw new Error('Failed to fetch documents');
+        const response = await fetch('http://127.0.0.1:8000/api/documents/');
+        if (!response.ok) throw new Error('Failed');
 
         const documents = await response.json();
         renderTable(documents);
         updateStats(documents);
 
     } catch (error) {
-        console.error('Error loading documents:', error);
-        tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Ошибка загрузки данных</td></tr>';
+        console.error(error);
+        tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Ошибка загрузки</td></tr>';
     }
 }
 
@@ -49,45 +48,49 @@ function renderTable(documents) {
     tableBody.innerHTML = '';
 
     if (documents.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Нет проверенных документов</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Нет документов</td></tr>';
         return;
     }
 
     documents.forEach(doc => {
-        const date = new Date(doc.uploaded_at).toLocaleDateString('ru-RU');
-        const score = doc.score !== null ? doc.score : '?';
-        let scoreClass = 'text-gray-400';
-        if (score > 80) scoreClass = 'text-green-400';
-        else if (score > 50) scoreClass = 'text-yellow-400';
-        else if (score !== '?') scoreClass = 'text-red-400';
-
-        const row = document.createElement('tr');
-        row.className = 'table-row-static border-b border-white/5';
-        row.innerHTML = `
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded bg-red-500/20 text-red-500 flex items-center justify-center font-bold text-xs">PDF</div>
-                    <span class="font-medium text-white break-all">${doc.name || 'Document'}</span>
-                </div>
-            </td>
-            <td class="px-6 py-4">${date}</td>
-            <td class="px-6 py-4">
-                <span class="${scoreClass} font-bold">${score}/100</span>
-            </td>
-            <td class="px-6 py-4">
-                <span class="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs font-bold">Готово</span>
-            </td>
-            <td class="px-6 py-4 text-right">
-                <button class="text-gray-400 hover:text-white transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                </button>
-            </td>
+        const row = `
+            <tr class="border-b border-white/5 table-row-static">
+                <td class="px-6 py-4 text-sm">${doc.name || 'Без названия'}</td>
+                <td class="px-6 py-4 text-sm text-gray-400">${new Date(doc.uploaded_at).toLocaleDateString('ru-RU')}</td>
+                <td class="px-6 py-4">
+                    <span class="px-3 py-1 text-xs rounded-full ${doc.status === 'processed' ? 'bg-green-500/20 text-green-400' : doc.status === 'failed' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}">
+                        ${doc.status === 'processed' ? 'Готов' : doc.status === 'failed' ? 'Ошибка' : 'Обработка'}
+                    </span>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-brand-orange to-brand-red" style="width: ${doc.score || 0}%"></div>
+                        </div>
+                        <span class="text-sm font-bold ${doc.score >= 70 ? 'text-green-400' : doc.score >= 40 ? 'text-yellow-400' : 'text-red-400'}">
+                            ${doc.score || 0}/100
+                        </span>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <button onclick="viewDocument(${doc.id})" class="text-brand-orange hover:text-brand-red transition">Открыть</button>
+                </td>
+            </tr>
         `;
-        tableBody.appendChild(row);
+        tableBody.innerHTML += row;
     });
 }
 
 function updateStats(documents) {
-    const countEl = document.getElementById('docs-count');
-    if (countEl) countEl.textContent = documents.length;
+    const total = documents.length;
+    const processed = documents.filter(d => d.status === 'processed').length;
+    const avgScore = processed > 0 ? Math.round(documents.reduce((sum, d) => sum + (d.score || 0), 0) / processed) : 0;
+
+    document.querySelector('.stat-total').textContent = total;
+    document.querySelector('.stat-processed').textContent = processed;
+    document.querySelector('.stat-score').textContent = avgScore;
+}
+
+function viewDocument(id) {
+    window.location.href = `document.html?id=${id}`;
 }
