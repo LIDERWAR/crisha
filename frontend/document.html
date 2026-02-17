@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр Документа - Crisha.Scope</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/custom.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Unbounded', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            orange: '#FF8C42',
+                            red: '#FF2E2E',
+                            dark: '#050505',
+                            card: '#0A0A0B',
+                            light: '#E2E2E2'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-brand-dark text-brand-light min-h-screen font-sans selection:bg-brand-orange/30 flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 glass-header border-r border-white/5 hidden md:flex flex-col justify-between p-6 z-20">
+        <div>
+            <!-- Logo -->
+            <a href="index.html"
+                class="block text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-red mb-10">
+                Crisha.Scope
+            </a>
+
+            <!-- Nav Links -->
+            <nav class="space-y-2">
+                <a href="dashboard.html"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                        </path>
+                    </svg>
+                    Обзор
+                </a>
+            </nav>
+        </div>
+
+        <!-- User Profile -->
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/5">
+            <div
+                class="w-10 h-10 rounded-full bg-brand-orange/20 flex items-center justify-center text-brand-orange font-bold">
+                S
+            </div>
+            <div class="overflow-hidden">
+                <div class="text-sm font-bold text-white truncate user-name-display">User</div>
+                <div class="text-xs text-brand-orange truncate user-email-display">Free Plan</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 relative overflow-y-auto h-screen p-4 md:p-8">
+
+        <!-- Background Gradients -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+            <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-orange/5 rounded-full blur-[120px]"></div>
+        </div>
+
+        <!-- Header (Mobile) -->
+        <div class="md:hidden flex justify-between items-center mb-8">
+            <div
+                class="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-red">
+                Crisha.Scope
+            </div>
+        </div>
+
+        <!-- Content Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <a href="dashboard.html"
+                    class="text-gray-400 hover:text-brand-orange transition flex items-center gap-2 mb-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
+                    </svg>
+                    Назад к списку
+                </a>
+                <h1 class="text-3xl font-bold text-white mb-2" id="doc-name">Загрузка...</h1>
+                <p class="text-gray-400" id="doc-date">...</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="deleteCurrentDocument()"
+                    class="bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-500 px-6 py-3 rounded-xl font-bold transition flex items-center gap-2 border border-white/5">
+                    Удалить
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+            <!-- Result Summary Card -->
+            <div class="col-span-1 md:col-span-2 glass-card rounded-2xl p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-white">Результат Анализа</h2>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="text-sm text-gray-400">Оценка безопасности</div>
+                            <div class="text-3xl font-bold text-white" id="doc-score">0/100</div>
+                        </div>
+                        <div
+                            class="w-16 h-16 rounded-full border-4 border-white/10 flex items-center justify-center text-white font-bold text-xl relative">
+                            <svg class="w-full h-full absolute inset-0 transform -rotate-90">
+                                <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4" fill="transparent"
+                                    class="text-white/5" />
+                                <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4" fill="transparent"
+                                    class="text-brand-orange" stroke-dasharray="175" stroke-dashoffset="175"
+                                    id="score-circle" />
+                            </svg>
+                            <span id="doc-score-mini">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white/5 rounded-xl p-6 border border-white/5 mb-6">
+                    <h3 class="font-bold text-white mb-2 flex items-center gap-2">
+                        <span class="text-xl">📄</span> Краткое содержание
+                    </h3>
+                    <p class="text-gray-300 leading-relaxed" id="doc-summary">
+                        Анализ еще не проведен или данные отсутствуют.
+                    </p>
+                </div>
+
+                <h3 class="font-bold text-white mb-4">Найденные риски</h3>
+                <div class="space-y-3" id="risks-list">
+                    <!-- Javascript will populate this -->
+                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 text-center text-gray-500">
+                        Риски не найдены
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meta / Actions -->
+            <div class="glass-card rounded-2xl p-6 h-fit">
+                <h3 class="text-lg font-bold text-white mb-4">Детали</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase font-bold mb-1">Статус</div>
+                        <div class="px-3 py-1 bg-white/10 rounded-lg text-white inline-block text-sm" id="doc-status">
+                            ...</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase font-bold mb-1">Тип файла</div>
+                        <div class="text-white">PDF Document</div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-8 border-t border-white/5">
+                    <button
+                        class="w-full py-3 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange rounded-xl font-bold transition mb-3">
+                        Скачать PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script src="js/document.js"></script>
+</body>
+
+</html>

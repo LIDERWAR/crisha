@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import HealthCheckView, ContractAnalysisView, DocumentListView, RegisterView, LoginView, LogoutView
+from .views import HealthCheckView, ContractAnalysisView, DocumentListView, RegisterView, LoginView, LogoutView, DocumentDetailView
 
 urlpatterns = [
     path('health/', HealthCheckView.as_view(), name='health_check'),
@@ -8,4 +8,5 @@ urlpatterns = [
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('analyze/', ContractAnalysisView.as_view(), name='analyze_contract'),
     path('documents/', DocumentListView.as_view(), name='document_list'),
+    path('documents/<int:pk>/', DocumentDetailView.as_view(), name='document_detail'),
 ]

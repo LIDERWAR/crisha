@@ -121,56 +121,52 @@ class ContractAnalysisView(APIView):
                  serializer = DocumentSerializer(document)
                  return Response(serializer.data, status=status.HTTP_201_CREATED)
             
-            # 3. Анализ - ОТКЛЮЧЕНО ПО ЗАПРОСУ (анализ будет запускаться вручную из кабинета)
-            # try:
-            #     print("--- Запуск AI анализа ---")
-            #     analysis_result = analyze_contract_with_ai(text)
-            #     print("--- AI анализ завершен ---")
-            # except Exception as e:
-            #     logger.error(f"Ошибка AI: {e}")
-            #     print(f"!!! Ошибка AI: {e} !!!")
-            #     document.status = 'failed'
-            #     document.summary = f"Ошибка AI анализа: {str(e)}"
-            #     document.save()
-            #     serializer = DocumentSerializer(document)
-            #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # 3. Анализ (ТЕПЕРЬ ВКЛЮЧЕН)
+            try:
+                print("--- Запуск AI анализа ---")
+                analysis_result = analyze_contract_with_ai(text)
+                print("--- AI анализ завершен ---")
+            except Exception as e:
+                logger.error(f"Ошибка AI: {e}")
+                print(f"!!! Ошибка AI: {e} !!!")
+                document.status = 'failed'
+                document.summary = f"Ошибка AI анализа: {str(e)}"
+                document.save()
+                serializer = DocumentSerializer(document)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
             
-            # if "error" in analysis_result:
-            #     print(f"!!! AI анализ вернул ошибку: {analysis_result} !!!")
-            #     document.status = 'failed'
-            #     document.summary = f"Ошибка AI: {analysis_result.get('error')}"
-            #     document.save()
-            #     serializer = DocumentSerializer(document)
-            #     # Возвращаем 201
-            #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if "error" in analysis_result:
+                print(f"!!! AI анализ вернул ошибку: {analysis_result} !!!")
+                document.status = 'failed'
+                document.summary = f"Ошибка AI: {analysis_result.get('error')}"
+                document.save()
+                serializer = DocumentSerializer(document)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
             # 4. Обновление документа
-            # try:
-            #     print("--- Сохранение результатов ---")
-            #     document.status = 'processed'
-            #     document.score = analysis_result.get('score')
-            #     document.summary = analysis_result.get('summary')
-            #     document.risks = analysis_result.get('risks')
-            #     document.save()
-            #     print("--- Результаты сохранены ---")
-            # except Exception as e:
-            #     logger.error(f"Ошибка сохранения результатов: {e}")
-            #     print(f"!!! Ошибка сохранения результатов: {e} !!!")
-            #     # Даже если сохранение деталей анализа не удалось, помечаем как ошибку
-            #     try:
-            #         document.status = 'failed'
-            #         document.summary = "Ошибка сохранения результатов анализа."
-            #         document.save()
-            #     except:
-            #         pass
-            #     # Возвращаем 201 с тем, что есть
-            #     serializer = DocumentSerializer(document)
-            #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                print("--- Сохранение результатов ---")
+                document.status = 'processed'
+                document.score = analysis_result.get('score')
+                document.summary = analysis_result.get('summary')
+                document.risks = analysis_result.get('risks')
+                document.save()
+                print("--- Результаты сохранены ---")
+            except Exception as e:
+                logger.error(f"Ошибка сохранения результатов: {e}")
+                print(f"!!! Ошибка сохранения результатов: {e} !!!")
+                # Даже если сохранение деталей анализа не удалось, помечаем как ошибку
+                try:
+                    document.status = 'failed'
+                    document.summary = "Ошибка сохранения результатов анализа."
+                    document.save()
+                except:
+                    pass
+                # Возвращаем 201 с тем, что есть
+                serializer = DocumentSerializer(document)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            # Return serialized data (Status: pending)
-            print("--- Документ сохранен, анализ пропущен ---")
-            serializer = DocumentSerializer(document)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
             # Return serialized data
             serializer = DocumentSerializer(document)
@@ -188,7 +184,7 @@ from rest_framework.permissions import IsAuthenticated
 class DocumentListView(generics.ListAPIView):
     serializer_class = DocumentSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         user = self.request.user
         if user.is_authenticated:
@@ -196,3 +192,12 @@ class DocumentListView(generics.ListAPIView):
         return Document.objects.none()
 
 
+class DocumentDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return Document.objects.filter(user=user)
+        return Document.objects.none()

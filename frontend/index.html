@@ -221,11 +221,18 @@
 
                         <!-- Loading State -->
                         <div id="loading-state"
-                            class="hidden absolute inset-0 bg-brand-dark/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-20">
-                            <div
-                                class="w-8 h-8 border-2 border-brand-orange border-t-transparent rounded-full animate-spin mb-2">
+                            class="hidden absolute inset-0 bg-brand-dark/95 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center z-20 transition-all duration-300">
+                            <div class="relative w-16 h-16 mb-4">
+                                <div class="absolute inset-0 rounded-full border-4 border-brand-orange/30"></div>
+                                <div
+                                    class="absolute inset-0 rounded-full border-4 border-brand-orange border-t-transparent animate-spin">
+                                </div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span class="text-xs text-white font-mono">AI</span>
+                                </div>
                             </div>
-                            <span class="text-xs text-brand-orange animate-pulse">Анализ...</span>
+                            <span id="loading-text"
+                                class="text-sm text-brand-orange font-medium animate-pulse">Анализ...</span>
                         </div>
 
                         <!-- File Input - В САМОМ КОНЦЕ для z-index поверх всех -->
@@ -553,19 +560,44 @@
                 log(`>>> STARTING UPLOAD: ${file.name} (${file.size} bytes)`);
                 if (loadingState) loadingState.classList.remove('hidden');
 
+                // Animation Logic
+                const loadingText = document.getElementById('loading-text');
+                const messages = [
+                    "Загрузка файла...",
+                    "Извлечение текста...",
+                    "Поиск рисков...",
+                    "Анализ условий...",
+                    "Формирование отчета..."
+                ];
+                let msgIndex = 0;
+                let intervalId = null;
+
+                if (loadingText) {
+                    loadingText.textContent = messages[0];
+                    intervalId = setInterval(() => {
+                        msgIndex = (msgIndex + 1) % messages.length;
+                        loadingText.textContent = messages[msgIndex];
+                    }, 1500); // Change message every 1.5s
+                }
+
                 const formData = new FormData();
                 formData.append('file', file);
 
                 try {
+                    const headers = {
+                        'Accept': 'application/json',
+                    };
+                    if (token) {
+                        headers['Authorization'] = `Token ${token}`;
+                    }
+
                     log(`Fetching http://127.0.0.1:8000/api/analyze/...`);
                     const response = await fetch('http://127.0.0.1:8000/api/analyze/', {
                         method: 'POST',
                         body: formData,
                         mode: 'cors',
                         cache: 'no-store',
-                        headers: {
-                            'Accept': 'application/json',
-                        }
+                        headers: headers
                     });
 
                     log(`Response status: ${response.status}`);
@@ -575,16 +607,25 @@
                         const data = await response.json();
                         log(`Response data: ${JSON.stringify(data).substring(0, 100)}...`);
 
+                        if (intervalId) clearInterval(intervalId);
                         if (loadingState) {
                             loadingState.innerHTML = `
-                                <div class="text-green-500 font-bold text-xl">✓ Файл загружен!</div>
+                                <div class="flex flex-col items-center animate-fade-in-up">
+                                    <div class="w-16 h-16 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center mb-4">
+                                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="text-green-500 font-bold text-lg mb-1">Готово!</div>
+                                    <div class="text-gray-400 text-xs">Перенаправление...</div>
+                                </div>
                             `;
                         }
 
                         setTimeout(() => {
                             log('>>> REDIRECTING...');
                             window.location.href = '/frontend/dashboard.html';
-                        }, 1000);
+                        }, 1500);
                     } else {
                         throw new Error(`Server error: ${response.status} ${response.statusText}`);
                     }
@@ -592,6 +633,7 @@
                     log(`>>> UPLOAD ERROR: ${error.name}: ${error.message}`, 'error');
                     console.error('>>> UPLOAD ERROR:', error);
                     alert('Ошибка: ' + error.message);
+                    if (intervalId) clearInterval(intervalId);
                     if (loadingState) loadingState.classList.add('hidden');
                 }
             }

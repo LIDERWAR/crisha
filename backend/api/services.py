@@ -4,8 +4,11 @@ import os
 import json
 from django.conf import settings
 
-# Initialize OpenAI client
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI client (DeepSeek compatible)
+client = openai.OpenAI(
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com"
+)
 
 def extract_text_from_pdf(file_stream):
     """
@@ -23,21 +26,22 @@ def extract_text_from_pdf(file_stream):
 
 def analyze_contract_with_ai(contract_text):
     """
-    Sends contract text to OpenAI for legal analysis.
+    Sends contract text to DeepSeek for legal analysis.
     If API key is missing or invalid, returns a mock response for testing.
     """
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    use_mock = os.getenv("USE_MOCK_AI", "False").lower() == "true"
     
-    # Check for placeholder or missing key
-    if not api_key or api_key.startswith("sk-placeholder"):
-        print("--- USING MOCK AI RESPONSE (No API Key) ---")
+    # Check for placeholder or missing key OR explicit mock mode
+    if not api_key or api_key.startswith("sk-placeholder") or use_mock:
+        print("--- USING MOCK AI RESPONSE (Mock Mode or No Key) ---")
         return {
             "score": 85,
-            "summary": "Это тестовый анализ, так как API ключ OpenAI не настроен. Договор выглядит стандартным, но содержит несколько рисков, требующих внимания.",
+            "summary": "Это тестовый анализ (Режим симуляции). Договор выглядит стандартным, но содержит несколько рисков.",
             "risks": [
                 {"title": "Право одностороннего расторжения", "description": "Арендодатель может расторгнуть договор без суда с уведомлением за 30 дней.", "severity": "high"},
                 {"title": "Индексация цены", "description": "Цена может быть увеличена в одностороннем порядке раз в год.", "severity": "medium"},
-                {"title": "Штрафы за просрочку", "description": "Пеня составляет 1% от суммы за каждый день просрочки (выше среднего).", "severity": "low"}
+                {"title": "Штрафы за просрочку", "description": "Пеня составляет 1% от суммы за каждый день просрочки.", "severity": "low"}
             ],
             "recommendations": ["Предложить протокол разногласий", "Снизить пеню до 0.1%"]
         }
@@ -65,18 +69,32 @@ def analyze_contract_with_ai(contract_text):
     )
 
     try:
+        print("--- Отправка запроса к DeepSeek ---")
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "You are a helpful legal assistant. Output valid JSON only."},
+                {"role": "system", "content": "You are a helpful legal assistant. Output valid JSON only. Do not use markdown formatting like ```json ... ```."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
         )
         content = response.choices[0].message.content
-        return json.loads(content)
+        print(f"--- RAW AI RESPONSE: {content} ---")
+        
+        # Clean markdown if present
+        if content.startswith("```"):
+            content = content.strip("`").replace("json\n", "").replace("json", "")
+        
+        result = json.loads(content)
+        
+        # Ensure score is int
+        if 'score' in result:
+             result['score'] = int(result['score'])
+             
+        return result
     except Exception as e:
         print(f"!!! AI Service Error: {e} !!!")
+        print(f"!!! Raw content was: {content if 'content' in locals() else 'None'} !!!")
         # Fallback to mock on error too, to keep flow working
         return {
             "score": 0,
