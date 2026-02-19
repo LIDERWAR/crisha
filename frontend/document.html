@@ -122,16 +122,9 @@
                             <div class="text-sm text-gray-400">Оценка безопасности</div>
                             <div class="text-3xl font-bold text-white" id="doc-score">0/100</div>
                         </div>
-                        <div
+                        <div id="score-icon-container"
                             class="w-16 h-16 rounded-full border-4 border-white/10 flex items-center justify-center text-white font-bold text-xl relative">
-                            <svg class="w-full h-full absolute inset-0 transform -rotate-90">
-                                <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4" fill="transparent"
-                                    class="text-white/5" />
-                                <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4" fill="transparent"
-                                    class="text-brand-orange" stroke-dasharray="175" stroke-dashoffset="175"
-                                    id="score-circle" />
-                            </svg>
-                            <span id="doc-score-mini">0</span>
+                            <!-- Icon will be injected by JS -->
                         </div>
                     </div>
                 </div>
@@ -146,10 +139,18 @@
                 </div>
 
                 <h3 class="font-bold text-white mb-4">Найденные риски</h3>
-                <div class="space-y-3" id="risks-list">
+                <div class="space-y-3 mb-8" id="risks-list">
                     <!-- Javascript will populate this -->
                     <div class="p-4 rounded-xl bg-white/5 border border-white/5 text-center text-gray-500">
                         Риски не найдены
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-white mb-4">Рекомендации и формулировки</h3>
+                <div class="space-y-4" id="recommendations-list">
+                    <!-- Javascript will populate this -->
+                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 text-center text-gray-500">
+                        Рекомендации отсутствуют
                     </div>
                 </div>
             </div>
@@ -170,9 +171,18 @@
                 </div>
 
                 <div class="mt-8 pt-8 border-t border-white/5">
-                    <button
+                    <button id="download-pdf-btn"
                         class="w-full py-3 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange rounded-xl font-bold transition mb-3">
-                        Скачать PDF
+                        Скачать оригинал
+                    </button>
+
+                    <button id="download-improved-btn"
+                        class="w-full py-3 bg-green-500/10 hover:bg-green-500/20 text-green-500 rounded-xl font-bold transition flex items-center justify-center gap-2 hidden">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Скачать улучшенную версию
                     </button>
                 </div>
             </div>

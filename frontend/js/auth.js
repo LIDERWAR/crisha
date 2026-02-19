@@ -54,9 +54,23 @@ const auth = {
         }
     },
 
-    logout() {
-        localStorage.removeItem('crisha_token');
-        window.location.href = 'index.html';
+    async logout() {
+        try {
+            // Try to notify backend, but don't block UI if it fails
+            const token = this.getToken();
+            if (token) {
+                await fetch(`${API_URL}/auth/logout/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Token ${token}`
+                    }
+                }).catch(err => console.warn('Logout API call failed:', err));
+            }
+        } finally {
+            localStorage.removeItem('crisha_token');
+            localStorage.removeItem('crisha_user');
+            window.location.href = 'index.html';
+        }
     },
 
     getToken() {

@@ -399,7 +399,7 @@
     </main>
 
     <!-- Results Modal / Section (Hidden initially) -->
-    <div id="results-section" class="hidden fixed inset-0 z-50 bg-dark/95 backdrop-blur-xl overflow-y-auto">
+    <div id="results-section" class="hidden fixed inset-0 z-50 bg-brand-dark/95 backdrop-blur-xl overflow-y-auto">
         <div class="min-h-screen px-4 py-8 flex items-center justify-center">
             <div
                 class="w-full max-w-4xl bg-[#1e293b] rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative">
@@ -424,7 +424,7 @@
                                 <div class="text-sm text-gray-400">Оценка безопасности</div>
                                 <div id="score-value" class="text-4xl font-bold text-green-400">85/100</div>
                             </div>
-                            <div
+                            <div id="score-icon-container"
                                 class="w-16 h-16 rounded-full border-4 border-green-400 flex items-center justify-center text-green-400">
                                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -457,11 +457,11 @@
                     </div>
 
                     <div class="mt-8 pt-8 border-t border-white/10 flex justify-end gap-4">
-                        <button
+                        <button id="download-pdf-btn"
                             class="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition border border-white/5">
                             Скачать PDF
                         </button>
-                        <button
+                        <button id="consult-btn"
                             class="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-red text-white font-medium transition shadow-lg shadow-brand-orange/20 hover:shadow-brand-orange/40">
                             Консультация юриста
                         </button>
@@ -472,191 +472,7 @@
     </div>
 
     <script defer src="js/auth.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Function to log to console only
-            function log(msg, type = 'info') {
-                if (type === 'error') console.error(msg);
-                else console.log(msg);
-            }
-
-            log('>>> INLINE SCRIPT LOADED');
-
-            // Log Environment
-            log(`Location: ${window.location.href}`);
-            log(`Origin: ${window.location.origin}`);
-
-            // HEALTH CHECK
-            log('Checking backend health...');
-            fetch('http://127.0.0.1:8000/api/health/')
-                .then(r => {
-                    log(`Health Check: ${r.status} ${r.statusText}`);
-                    return r.json().catch(() => ({}));
-                })
-                .then(d => log(`Health Data: ${JSON.stringify(d)}`))
-                .catch(e => log(`Health Check FAILED: ${e.message}`, 'error'));
-
-            // Auth logic
-            let token = null;
-            try {
-                if (typeof auth === 'undefined') {
-                    log('ERROR: auth object is undefined!', 'error');
-                } else {
-                    token = auth.getToken();
-                    log(`Token present: ${!!token}`);
-                }
-            } catch (e) {
-                log(`Auth check error: ${e.message}`, 'error');
-            }
-
-            if (token) {
-                const navBtn = document.querySelector('nav a[href="login.html"]');
-                if (navBtn) {
-                    navBtn.textContent = 'Кабинет';
-                    navBtn.href = '/frontend/dashboard.html';
-                }
-            }
-
-            // UPLOAD LOGIC FROM TEST-INPUT.HTML
-            const dropZone = document.getElementById('drop-zone');
-            const fileInput = document.getElementById('file-input');
-            const loadingState = document.getElementById('loading-state');
-
-            console.log(`>>> Elements: dropZone=${!!dropZone}, fileInput=${!!fileInput}, loadingState=${!!loadingState}`);
-
-            if (!fileInput) {
-                console.error('>>> ОШИБКА: fileInput не найден!');
-                return;
-            }
-
-            // Force file input to be clickable
-            fileInput.style.display = 'block';
-            fileInput.style.opacity = '0';
-            fileInput.style.position = 'absolute';
-            fileInput.style.inset = '0';
-            fileInput.style.zIndex = '100';
-
-            // PREVENT BUBBLING AND DEFAULT ACTIONS
-            fileInput.addEventListener('click', (e) => {
-                e.stopPropagation();
-                // Don't preventDefault on click, or file dialog won't open!
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                e.stopPropagation();
-                e.preventDefault(); // Stop any form submission if present
-                console.log('>>> CHANGE EVENT FIRED');
-
-                const file = e.target.files[0];
-                if (file && file.type === 'application/pdf') {
-                    uploadFile(file);
-                } else {
-                    alert('Пожалуйста, выберите PDF файл');
-                }
-            });
-
-            async function uploadFile(file) {
-                log(`>>> STARTING UPLOAD: ${file.name} (${file.size} bytes)`);
-                if (loadingState) loadingState.classList.remove('hidden');
-
-                // Animation Logic
-                const loadingText = document.getElementById('loading-text');
-                const messages = [
-                    "Загрузка файла...",
-                    "Извлечение текста...",
-                    "Поиск рисков...",
-                    "Анализ условий...",
-                    "Формирование отчета..."
-                ];
-                let msgIndex = 0;
-                let intervalId = null;
-
-                if (loadingText) {
-                    loadingText.textContent = messages[0];
-                    intervalId = setInterval(() => {
-                        msgIndex = (msgIndex + 1) % messages.length;
-                        loadingText.textContent = messages[msgIndex];
-                    }, 1500); // Change message every 1.5s
-                }
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    const headers = {
-                        'Accept': 'application/json',
-                    };
-                    if (token) {
-                        headers['Authorization'] = `Token ${token}`;
-                    }
-
-                    log(`Fetching http://127.0.0.1:8000/api/analyze/...`);
-                    const response = await fetch('http://127.0.0.1:8000/api/analyze/', {
-                        method: 'POST',
-                        body: formData,
-                        mode: 'cors',
-                        cache: 'no-store',
-                        headers: headers
-                    });
-
-                    log(`Response status: ${response.status}`);
-
-                    if (response.ok) {
-                        log('>>> UPLOAD SUCCESS');
-                        const data = await response.json();
-                        log(`Response data: ${JSON.stringify(data).substring(0, 100)}...`);
-
-                        if (intervalId) clearInterval(intervalId);
-                        if (loadingState) {
-                            loadingState.innerHTML = `
-                                <div class="flex flex-col items-center animate-fade-in-up">
-                                    <div class="w-16 h-16 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center mb-4">
-                                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="text-green-500 font-bold text-lg mb-1">Готово!</div>
-                                    <div class="text-gray-400 text-xs">Перенаправление...</div>
-                                </div>
-                            `;
-                        }
-
-                        setTimeout(() => {
-                            log('>>> REDIRECTING...');
-                            window.location.href = '/frontend/dashboard.html';
-                        }, 1500);
-                    } else {
-                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-                    }
-                } catch (error) {
-                    log(`>>> UPLOAD ERROR: ${error.name}: ${error.message}`, 'error');
-                    console.error('>>> UPLOAD ERROR:', error);
-                    alert('Ошибка: ' + error.message);
-                    if (intervalId) clearInterval(intervalId);
-                    if (loadingState) loadingState.classList.add('hidden');
-                }
-            }
-
-            // --- Scroll Animations Restoration ---
-            const reveals = document.querySelectorAll('.reveal');
-            function checkScroll() {
-                reveals.forEach(el => {
-                    const rect = el.getBoundingClientRect();
-                    // trigger slightly earlier
-                    if (rect.top < window.innerHeight - 50) {
-                        el.classList.add('visible');
-                    }
-                });
-            }
-            window.addEventListener('scroll', checkScroll);
-            // Run immediately
-            setTimeout(checkScroll, 100);
-            checkScroll();
-
-        });
-
-    </script>
+    <script defer src="js/main.js"></script>
 </body>
 
 </html>

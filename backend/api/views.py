@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+import os
 import fitz # PyMuPDF
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -72,13 +73,16 @@ class ContractAnalysisView(APIView):
         if not file_obj:
             return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
         
-        if not file_obj.name.endswith('.pdf'):
-            return Response({"error": "Only PDF files are supported"}, status=status.HTTP_400_BAD_REQUEST)
+        # Valid extensions
+        valid_extensions = ['.pdf', '.docx', '.doc', '.txt']
+        file_ext = os.path.splitext(file_obj.name)[1].lower()
+        if file_ext not in valid_extensions:
+             return Response({"error": f"Unsupported file type. Supported: {', '.join(valid_extensions)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            print("--- STARTING DOCUMENT PROCESSING ---")
+            print("--- НАЧАЛО ОБРАБОТКИ ДОКУМЕНТА ---")
             
-            # 1. Сначала сохраняем документ (чтобы получить ID и сохранить файл)
+            # 1. Сначала сохраняем документ
             user = request.user if request.user.is_authenticated else None
             try:
                 document = Document.objects.create(file=file_obj, user=user, status='pending')
@@ -90,38 +94,56 @@ class ContractAnalysisView(APIView):
 
             # 2. Извлечение текста
             try:
-                print("--- Начало извлечения текста ---")
-                # Открываем в бинарном режиме
-                with document.file.open('rb') as f:
-                    file_content = f.read()
-                    
-                # Используем fitz на байтах
-                doc = fitz.open(stream=file_content, filetype="pdf")
-                text = ""
-                for page in doc:
-                    text += page.get_text()
-                doc.close() # Закрываем документ fitz
-                print(f"--- Текст извлечен: Длина {len(text)} ---")
+                print(f"--- Начало извлечения текста ({file_ext}) ---")
                 
+                # В зависимости от расширения выбираем метод
+                from .services import extract_text_from_pdf, extract_text_from_docx, extract_text_from_txt, analyze_contract_with_ai, save_improved_document
+                
+                text = None
+                with document.file.open('rb') as f:
+                    # Для python-docx нужен stream, но иногда file-like object. 
+                    # fitz.open тоже принимает bytes или stream.
+                    # Лучше прочитать в BytesIO для надежности
+                    from io import BytesIO
+                    file_content = f.read()
+                    stream = BytesIO(file_content)
+
+                    if file_ext == '.pdf':
+                        text = extract_text_from_pdf(stream)
+                    elif file_ext == '.docx' or file_ext == '.doc':
+                        # .doc не поддерживается python-docx, но попробуем как docx или вернем ошибку
+                        if file_ext == '.doc':
+                            print("Warning: .doc format is not fully supported natively. Trying as text/binary fallback or skipping.")
+                            # TODO: Add .doc support via antiword or libreoffice if needed. 
+                            # For now, treat as error or try text extraction if it's actually renamed xml.
+                            pass
+                        text = extract_text_from_docx(stream)
+                    elif file_ext == '.txt':
+                        text = extract_text_from_txt(stream)
+                
+                if text:
+                    print(f"--- Текст извлечен: Длина {len(text)} ---")
+                else:
+                    print(f"!!! Текст не извлечен ({file_ext}) !!!")
+
             except Exception as e:
                  logger.error(f"Ошибка извлечения текста: {e}")
                  print(f"!!! Ошибка извлечения текста: {e} !!!")
                  document.status = 'failed'
                  document.summary = f"Ошибка извлечения текста: {str(e)}"
                  document.save()
-                 # Возвращаем 201, так как документ создан, пусть и с ошибкой
                  serializer = DocumentSerializer(document)
                  return Response(serializer.data, status=status.HTTP_201_CREATED)
             
             if not text:
                  print("!!! Текст не извлечен !!!")
                  document.status = 'failed'
-                 document.summary = "Не удалось извлечь текст. Файл может быть пустым, зашифрованным или отсканированным без OCR."
+                 document.summary = "Не удалось извлечь текст. Файл может быть поврежден или не поддерживается."
                  document.save()
                  serializer = DocumentSerializer(document)
                  return Response(serializer.data, status=status.HTTP_201_CREATED)
             
-            # 3. Анализ (ТЕПЕРЬ ВКЛЮЧЕН)
+            # 3. Анализ
             try:
                 print("--- Запуск AI анализа ---")
                 analysis_result = analyze_contract_with_ai(text)
@@ -150,7 +172,17 @@ class ContractAnalysisView(APIView):
                 document.score = analysis_result.get('score')
                 document.summary = analysis_result.get('summary')
                 document.risks = analysis_result.get('risks')
+                document.recommendations = analysis_result.get('recommendations')
+                
+                # Сохранение улучшенного файла
+                rewritten_text = analysis_result.get('rewritten_text')
+                if rewritten_text:
+                    print("--- Сохранение улучшенного документа ---")
+                    improved_content_file = save_improved_document(rewritten_text, document.file.name)
+                    document.improved_file.save(improved_content_file.name, improved_content_file, save=False)
+                
                 document.save()
+
                 print("--- Результаты сохранены ---")
             except Exception as e:
                 logger.error(f"Ошибка сохранения результатов: {e}")
@@ -174,10 +206,10 @@ class ContractAnalysisView(APIView):
 
         except Exception as e:
             logger.error(f"Unexpected error in view: {e}")
-            print(f"!!! Unexpected error in view: {e} !!!")
+            print(f"!!! Непредвиденная ошибка в представлении: {e} !!!")
             import traceback
             traceback.print_exc()
-            return Response({"error": f"Unexpected server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"Непредвиденная ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 from rest_framework.permissions import IsAuthenticated
 

@@ -17,6 +17,8 @@ class Document(models.Model):
     score = models.IntegerField(null=True, blank=True)
     summary = models.TextField(null=True, blank=True)
     risks = models.JSONField(null=True, blank=True) # Requires Django 3.1+
+    recommendations = models.JSONField(null=True, blank=True)
+    improved_file = models.FileField(upload_to='improved_contracts/', null=True, blank=True)
     
     def __str__(self):
         return self.name or f"Document {self.id}"
