@@ -46,7 +46,53 @@ def extract_text_from_txt(file_stream):
     try:
         return file_stream.read().decode('utf-8')
     except Exception as e:
-        print(f"Ошибка извлечения текста (TXT): {e}")
+        return None
+
+def convert_doc_to_docx(doc_path):
+    """
+    Конвертирует .doc в .docx используя MS Word через COM интерфейс.
+    Возвращает путь к новому файлу .docx.
+    ВНИМАНИЕ: Требует установленного MS Word на сервере/машине.
+    """
+    if not os.path.exists(doc_path):
+        print(f"Файл не найден для конвертации: {doc_path}")
+        return None
+
+    try:
+        import win32com.client
+        import pythoncom
+        
+        # Инициализация COM в текущем потоке
+        pythoncom.CoInitialize()
+        
+        word = win32com.client.Dispatch("Word.Application")
+        word.Visible = False
+        
+        # Открываем .doc
+        # Absolute path is valid, doc_path comes from django which usually is absolute if file system storage
+        abs_path = os.path.abspath(doc_path)
+        doc = word.Documents.Open(abs_path)
+        
+        # Путь для .docx
+        docx_path = abs_path + "x" # .doc -> .docx
+        
+        # Сохраняем как .docx (FileFormat=16 for wdFormatXMLDocument)
+        doc.SaveAs(docx_path, FileFormat=16)
+        doc.Close()
+        # word.Quit() # Не закрываем Word полностью, чтобы не тормозить, или закрываем? 
+        # Лучше закрыть Quit, если мы не хотим держать процесс. 
+        # Но если много запросов, это медленно. Для прототипа Quit ок.
+        word.Quit()
+        
+        return docx_path
+    except Exception as e:
+        print(f"Ошибка конвертации DOC -> DOCX: {e}")
+        # Пытаемся закрыть Word если ошибка
+        try:
+            if 'word' in locals():
+                word.Quit()
+        except:
+            pass
         return None
 
 def analyze_contract_with_ai(contract_text):
@@ -58,7 +104,10 @@ def analyze_contract_with_ai(contract_text):
     use_mock = os.getenv("USE_MOCK_AI", "False").lower() == "true"
     
     # Проверка на заглушку
-    if not api_key or api_key.startswith("sk-placeholder") or use_mock:
+    # Если стоит USE_MOCK_AI=True, то всегда мок
+    # Если ключа нет, то тоже мок
+    print(f"DEBUG: api_key exists: {bool(api_key)}, startswith sk-placeholder: {api_key.startswith('sk-placeholder') if api_key else 'N/A'}, use_mock: {use_mock}")
+    if use_mock or (not api_key or api_key.startswith("sk-placeholder")):
         print("--- ИСПОЛЬЗУЮ MOCK AI (Режим симуляции или нет ключа) ---")
         
         # Генерируем "улучшенный" текст на основе исходного
@@ -144,10 +193,54 @@ def save_improved_document(text, original_filename):
     
     # Всегда стараемся сохранить как DOCX для удобства
     try:
-        doc = docx.Document()
-        for line in text.split('\n'):
-            doc.add_paragraph(line)
+        from docx.shared import Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
         
+        doc = docx.Document()
+        
+        # Настройка стиля Normal
+        style = doc.styles['Normal']
+        font = style.font
+        font.name = 'Times New Roman'
+        font.size = Pt(12)
+        font.color.rgb = RGBColor(0, 0, 0)
+        
+        # Разбор текста по параграфам
+        paragraphs = text.split('\n')
+        
+        for para_text in paragraphs:
+            para_text = para_text.strip()
+            if not para_text:
+                continue
+                
+            # Простейший парсинг Markdown
+            # Заголовки
+            if para_text.startswith('# '):
+                p = doc.add_heading(para_text[2:], level=1)
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                continue
+            elif para_text.startswith('## '):
+                p = doc.add_heading(para_text[3:], level=2)
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                continue
+            elif para_text.startswith('### '):
+                p = doc.add_heading(para_text[4:], level=3)
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                continue
+                
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            
+            # Жирный текст (**text**)
+            parts = para_text.split('**')
+            for i, part in enumerate(parts):
+                run = p.add_run(part)
+                run.font.name = 'Times New Roman'
+                run.font.size = Pt(12)
+                # Если индекс нечетный, значит это текст ВНУТРИ ** **, делаем жирным
+                if i % 2 == 1:
+                    run.bold = True
+
         # Сохраняем во временный буфер или сразу в storage
         # Django FileField принимает ContentFile
         from io import BytesIO

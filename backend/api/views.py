@@ -97,26 +97,49 @@ class ContractAnalysisView(APIView):
                 print(f"--- Начало извлечения текста ({file_ext}) ---")
                 
                 # В зависимости от расширения выбираем метод
-                from .services import extract_text_from_pdf, extract_text_from_docx, extract_text_from_txt, analyze_contract_with_ai, save_improved_document
+                from .services import extract_text_from_pdf, extract_text_from_docx, extract_text_from_txt, analyze_contract_with_ai, save_improved_document, convert_doc_to_docx
                 
                 text = None
-                with document.file.open('rb') as f:
-                    # Для python-docx нужен stream, но иногда file-like object. 
-                    # fitz.open тоже принимает bytes или stream.
-                    # Лучше прочитать в BytesIO для надежности
-                    from io import BytesIO
-                    file_content = f.read()
-                    stream = BytesIO(file_content)
+                
+                # Специальная обработка для .doc (конвертация)
+                if file_ext == '.doc':
+                    print("--- Обнаружен файл .doc, начинаем конвертацию ---")
+                    try:
+                        # Получаем путь к сохраненному файлу
+                        doc_path = document.file.path
+                        docx_path = convert_doc_to_docx(doc_path)
+                        
+                        if docx_path and os.path.exists(docx_path):
+                            print(f"--- Конвертация успешна: {docx_path} ---")
+                            # Читаем текст из нового .docx
+                            with open(docx_path, "rb") as f_docx:
+                                from io import BytesIO
+                                stream_docx = BytesIO(f_docx.read())
+                                text = extract_text_from_docx(stream_docx)
+                            
+                            # Опционально: обновить файл в модели на .docx
+                            # Но это требует открытия файла и сохранения его в поле FileField
+                            # Пока просто используем текст
+                        else:
+                            raise Exception("Не удалось конвертировать .doc в .docx (Word не установлен или ошибка COM)")
+                            
+                    except Exception as e:
+                        print(f"!!! Ошибка обработки .doc: {e} !!!")
+                        return Response({"error": f"Ошибка обработки .doc файла: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                    if file_ext == '.pdf':
-                        text = extract_text_from_pdf(stream)
-                    elif file_ext == '.docx':
-                        text = extract_text_from_docx(stream)
-                    elif file_ext == '.doc':
-                         # .doc binary format is not supported by python-docx
-                         return Response({"error": "Формат .doc (Word 97-2003) не поддерживается. Пожалуйста, сохраните файл как .docx"}, status=status.HTTP_400_BAD_REQUEST)
-                    elif file_ext == '.txt':
-                        text = extract_text_from_txt(stream)
+                else:
+                    # Стандартная обработка
+                    with document.file.open('rb') as f:
+                        from io import BytesIO
+                        file_content = f.read()
+                        stream = BytesIO(file_content)
+
+                        if file_ext == '.pdf':
+                            text = extract_text_from_pdf(stream)
+                        elif file_ext == '.docx':
+                            text = extract_text_from_docx(stream)
+                        elif file_ext == '.txt':
+                            text = extract_text_from_txt(stream)
                 
                 if text:
                     print(f"--- Текст извлечен: Длина {len(text)} ---")

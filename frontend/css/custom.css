@@ -1,4 +1,10 @@
 @layer utilities {
+
+    html,
+    body {
+        overflow-x: hidden;
+    }
+
     .glass-card {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
@@ -145,6 +151,24 @@
         animation: float-reverse 7s ease-in-out infinite;
     }
 
+    @keyframes pulse-scale {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+    }
+
+    .animate-pulse-scale {
+        animation: pulse-scale 3s ease-in-out infinite;
+    }
+
     .delay-100 {
         animation-delay: 0.1s;
     }
@@ -194,4 +218,153 @@
 
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+@media (max-width: 768px) {
+    #documents-table thead {
+        display: none;
+    }
+
+    #documents-table,
+    #documents-table tbody,
+    #documents-table tr,
+    #documents-table td {
+        display: block;
+        width: 100%;
+    }
+
+    #documents-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 1rem;
+        position: relative;
+    }
+
+    #documents-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    #documents-table td:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    #documents-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        color: #9CA3AF;
+        margin-right: 1rem;
+    }
+
+    /* Document Name Styling - Headline Style */
+    #documents-table td[data-label="Документ"] {
+        display: block;
+        text-align: left;
+        padding-top: 0;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #documents-table td[data-label="Документ"]::before {
+        display: none;
+    }
+
+    /* Action Buttons Alignment */
+    #documents-table td[data-label="Действие"] {
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+
+    /* Global Container Padding */
+    main {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Navbar Adjustments for 320px */
+    .glass-header {
+        padding: 0.75rem 0.75rem !important;
+        /* Tighter padding */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        /* Ensure minimal gap */
+        flex-wrap: wrap;
+        /* Allow wrap if absolutely necessary */
+    }
+
+    /* Logo Size */
+    .glass-header .font-display {
+        font-size: 1.1rem !important;
+        /* Smaller logo */
+    }
+
+    /* Nav Button Mobile */
+    nav a[href="login.html"],
+    nav a[href="dashboard.html"],
+    button,
+    .glass-header button,
+    .glass-header a.bg-white\/5 {
+        padding: 0.4rem 0.75rem !important;
+        font-size: 0.75rem !important;
+        /* Smaller button text */
+    }
+
+    /* Header Adjustments */
+    .glass-header h1 {
+        font-size: 1.75rem !important;
+        /* Smaller title */
+        line-height: 1.2;
+    }
+
+    .glass-header h2 {
+        font-size: 1.5rem !important;
+    }
+
+    /* Card Padding Reduction */
+    .glass-card {
+        padding: 1rem !important;
+        /* Reduce from p-6/p-8 */
+    }
+
+    /* Stats Grid Gap */
+    .grid-cols-1 {
+        gap: 1rem !important;
+    }
+
+    /* Table Card Adjustments */
+    #documents-table tr {
+        padding: 0.75rem;
+    }
+
+    #documents-table td {
+        padding: 0.5rem 0;
+        font-size: 0.8125rem;
+        /* Smaller text 13px */
+    }
+
+    #documents-table td::before {
+        font-size: 0.65rem;
+        /* Smaller label */
+    }
+
+    /* Upload Zone on Mobile */
+    #drop-zone {
+        height: 10rem !important;
+        /* Matches h-40 */
+    }
+
+    /* Hide less important info if really needed, or just stack tighter */
 }
