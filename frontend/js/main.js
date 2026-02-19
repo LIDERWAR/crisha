@@ -186,12 +186,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Simple extension check as fallback
             const name = file.name.toLowerCase();
-            const isValidExt = name.endsWith('.pdf') || name.endsWith('.doc') || name.endsWith('.docx') || name.endsWith('.txt');
+            const isValidExt = name.endsWith('.pdf') || name.endsWith('.docx') || name.endsWith('.txt');
 
             if (file && (validTypes.includes(file.type) || isValidExt)) {
                 uploadFile(file);
             } else {
-                alert('Пожалуйста, выберите файл PDF, DOCX или TXT');
+                alert('Пожалуйста, выберите файл PDF, DOCX или TXT. Формат .doc (старый Word) не поддерживается.');
             }
         });
     }

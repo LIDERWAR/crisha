@@ -110,14 +110,11 @@ class ContractAnalysisView(APIView):
 
                     if file_ext == '.pdf':
                         text = extract_text_from_pdf(stream)
-                    elif file_ext == '.docx' or file_ext == '.doc':
-                        # .doc не поддерживается python-docx, но попробуем как docx или вернем ошибку
-                        if file_ext == '.doc':
-                            print("Warning: .doc format is not fully supported natively. Trying as text/binary fallback or skipping.")
-                            # TODO: Add .doc support via antiword or libreoffice if needed. 
-                            # For now, treat as error or try text extraction if it's actually renamed xml.
-                            pass
+                    elif file_ext == '.docx':
                         text = extract_text_from_docx(stream)
+                    elif file_ext == '.doc':
+                         # .doc binary format is not supported by python-docx
+                         return Response({"error": "Формат .doc (Word 97-2003) не поддерживается. Пожалуйста, сохраните файл как .docx"}, status=status.HTTP_400_BAD_REQUEST)
                     elif file_ext == '.txt':
                         text = extract_text_from_txt(stream)
                 
