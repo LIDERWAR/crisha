@@ -3,6 +3,7 @@ import os
 import hashlib
 import logging
 from rest_framework.response import Response
+from django.http import HttpResponse
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from rest_framework import generics
@@ -79,7 +80,8 @@ class ContractAnalysisView(APIView):
             # 0. Check limits if user is authenticated
             user = request.user if request.user.is_authenticated else None
             if user:
-                profile = user.profile
+                # Use get_or_create to ensure profile exists
+                profile, created = UserProfile.objects.get_or_create(user=user)
                 if profile.checks_remaining <= 0:
                      return Response({
                          "error": "Limit reached", 
@@ -128,6 +130,8 @@ class DocumentDetailView(generics.RetrieveDestroyAPIView):
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
+        # Ensure profile exists before serialization
+        UserProfile.objects.get_or_create(user=request.user)
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
@@ -230,8 +234,8 @@ class PaymentWebhookView(APIView):
                 transaction.status = 'completed'
                 transaction.save()
 
-                # Credit user profile
-                profile = transaction.user.profile
+                # Credit user profile (ensure it exists)
+                profile, created = UserProfile.objects.get_or_create(user=transaction.user)
                 profile.checks_remaining += transaction.checks_count
                 
                 # Update tier if applicable
@@ -245,7 +249,7 @@ class PaymentWebhookView(APIView):
                 
                 logger.info(f"Robokassa: Success. Credited {transaction.checks_count} checks to {transaction.user.username}")
             
-            return Response(f"OK{inv_id}") # Robokassa expects OK + InvId
+            return HttpResponse(f"OK{inv_id}", status=200) # Robokassa expects plain OK + InvId
         except Transaction.DoesNotExist:
             logger.error(f"Robokassa: Transaction {inv_id} not found")
-            return Response("fail", status=status.HTTP_404_NOT_FOUND)
+            return HttpResponse("fail", status=404)

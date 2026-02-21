@@ -38,7 +38,7 @@
 
     <!-- Sidebar -->
     <aside id="sidebar"
-        class="w-full md:w-64 glass-header border-r border-white/5 flex hidden md:flex flex-col justify-between p-6 z-50 fixed md:relative h-full transition-transform duration-300 transform -translate-x-full md:translate-x-0 bg-brand-dark/95 backdrop-blur-xl">
+        class="w-full md:w-64 glass-header border-r border-white/5 flex hidden md:flex flex-col p-6 z-50 fixed md:relative h-screen transition-transform duration-300 transform -translate-x-full md:translate-x-0 bg-brand-dark/95 backdrop-blur-xl shrink-0 top-0">
         <div class="absolute top-4 right-4 md:hidden">
             <button id="close-sidebar-btn" class="text-gray-400 hover:text-white">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,15 +49,14 @@
         </div>
         <div>
             <!-- Logo -->
-            <a href="index.html" class="flex items-center gap-3 mb-10 group">
-                <img src="images/logo.svg" alt="Logo" class="h-8 w-auto">
+            <a href="index.html" class="flex items-center gap-3 mb-6 group">
                 <span class="text-xl font-display font-bold text-white transition-colors group-hover:text-brand-orange">
                     ContractCheck
                 </span>
             </a>
 
             <!-- Nav Links -->
-            <nav class="space-y-6">
+            <nav class="space-y-1">
                 <a href="#" data-section="overview"
                     class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white font-medium text-base transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,7 +96,7 @@
                     Настройки
                 </a>
                 <button
-                    class="logout-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-500 font-medium text-base transition text-left mt-4 border-t border-white/5">
+                    class="logout-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-500 font-medium text-sm transition text-left mt-auto border-t border-white/5">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
@@ -105,10 +104,11 @@
                     </svg>
                     Выйти
                 </button>
+            </nav>
         </div>
 
         <!-- User Profile -->
-        <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/5 min-w-0">
+        <div class="mt-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/5 min-w-0">
             <div
                 class="w-10 h-10 rounded-full bg-brand-orange/20 flex-shrink-0 flex items-center justify-center text-brand-orange font-bold">
                 S
