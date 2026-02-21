@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crisha.Scope - AI Аудит Договоров</title>
+    <title>ContractCheck - AI Аудит Договоров</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
@@ -43,10 +43,13 @@
     <!-- Navbar -->
     <nav
         class="w-full py-6 px-4 md:px-8 flex justify-between items-center border-b border-white/5 glass-header sticky top-0 z-50">
-        <div
-            class="text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-red pointer-events-none select-none">
-            Crisha.Scope
-        </div>
+        <a href="index.html" class="flex items-center gap-3 group">
+            <img src="images/logo.svg" alt="ContractCheck Logo"
+                class="h-10 w-auto transition-transform group-hover:scale-105">
+            <div class="hidden md:block text-2xl font-display font-bold text-white">
+                ContractCheck
+            </div>
+        </a>
         <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
             <a href="#how-it-works" class="hover:text-white transition">Как это работает</a>
             <a href="#pricing" class="hover:text-white transition">Цены</a>
@@ -414,7 +417,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M5 13l4 4L19 7"></path>
                             </svg>
-                            50 проверок в месяц
+                            20 проверок в месяц
                         </li>
                         <li class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-brand-orange" fill="none" stroke="currentColor"
@@ -434,17 +437,17 @@
                         </li>
                     </ul>
 
-                    <a href="register.html"
+                    <button onclick="startPayment('pro')"
                         class="block text-center w-full py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-red text-white font-medium transition shadow-lg shadow-brand-orange/20 hover:shadow-brand-orange/40">
                         Выбрать PRO
-                    </a>
+                    </button>
                 </div>
 
                 <!-- Enterprise -->
                 <div class="glass-card rounded-3xl p-8 flex flex-col hover:border-white/10 transition reveal delay-300">
                     <h3 class="text-xl font-bold text-white mb-2">Бизнес</h3>
                     <p class="text-brand-orange mb-6">Для агентств</p>
-                    <div class="text-4xl font-bold text-white mb-6">4990₽<span
+                    <div class="text-4xl font-bold text-white mb-6">4900₽<span
                             class="text-lg text-gray-500 font-normal">/мес</span></div>
 
                     <ul class="space-y-4 mb-8 text-gray-400 flex-grow">
@@ -454,7 +457,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Безлимитные проверки
+                            100 проверок в месяц
                         </li>
                         <li class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-brand-orange" fill="none" stroke="currentColor"
@@ -470,21 +473,21 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M5 13l4 4L19 7"></path>
                             </svg>
-                            Личный менеджер
+                            Юридическая выверка
                         </li>
                     </ul>
 
-                    <a href="mailto:support@crisha.ru"
+                    <button onclick="startPayment('business')"
                         class="block text-center w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition border border-white/5">
-                        Связаться
-                    </a>
+                        Выбрать Бизнес
+                    </button>
                 </div>
             </div>
         </section>
 
         <!-- Footer -->
         <footer class="border-t border-white/5 pt-12 pb-8 text-center text-gray-500 text-sm">
-            <p>&copy; 2026 Crisha.Scope. All rights reserved.</p>
+            <p>&copy; 2026 ContractCheck. All rights reserved.</p>
         </footer>
 
     </main>

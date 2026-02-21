@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ошибка оплаты - ContractCheck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/custom.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Unbounded', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            orange: '#FF8C42',
+                            red: '#FF2E2E',
+                            dark: '#050505',
+                            card: '#0A0A0B',
+                            light: '#E2E2E2'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-brand-dark text-brand-light min-h-screen font-sans flex items-center justify-center p-4">
+
+    <!-- Background Gradients -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-[120px]">
+        </div>
+    </div>
+
+    <div class="max-w-md w-full glass-card rounded-3xl p-8 text-center">
+        <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8 text-red-500">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </div>
+
+        <h1 class="text-3xl font-display font-bold text-white mb-4">Ошибка оплаты</h1>
+        <p class="text-gray-400 mb-8">
+            К сожалению, при обработке вашего платежа произошла ошибка. Деньги не были списаны с вашего счета.
+        </p>
+
+        <div class="space-y-4">
+            <a href="index.html#pricing"
+                class="block w-full py-4 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition">
+                Попробовать еще раз
+            </a>
+            <a href="dashboard.html" class="block w-full py-4 text-gray-400 font-medium hover:text-white transition">
+                Вернуться в дашборд
+            </a>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/5">
+            <p class="text-sm text-gray-500 items-center justify-center flex gap-2">
+                Нужна помощь?
+                <a href="#" class="text-brand-orange font-bold hover:underline">Поддержка в Telegram</a>
+            </p>
+        </div>
+    </div>
+
+</body>
+
+</html>

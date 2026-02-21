@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата успешна - ContractCheck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/custom.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Unbounded', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            orange: '#FF8C42',
+                            red: '#FF2E2E',
+                            dark: '#050505',
+                            card: '#0A0A0B',
+                            light: '#E2E2E2'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-brand-dark text-brand-light min-h-screen font-sans flex items-center justify-center p-4">
+
+    <!-- Background Gradients -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-orange/10 rounded-full blur-[120px]">
+        </div>
+    </div>
+
+    <div class="max-w-md w-full glass-card rounded-3xl p-8 text-center scale-in">
+        <div
+            class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-8 text-green-500">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+        </div>
+
+        <h1 class="text-3xl font-display font-bold text-white mb-4">Оплата прошла успешно!</h1>
+        <p class="text-gray-400 mb-8">
+            Ваш баланс проверок был успешно обновлен. Теперь вы можете продолжить анализ ваших документов с полным
+            доступом.
+        </p>
+
+        <a href="dashboard.html"
+            class="block w-full py-4 bg-brand-orange text-white rounded-xl font-bold hover:shadow-lg hover:shadow-brand-orange/20 transition transform hover:-translate-y-0.5">
+            Перейти в личный кабинет
+        </a>
+
+        <p class="mt-6 text-xs text-gray-500">
+            Если у вас возникли вопросы, напишите нам в <a href="#"
+                class="text-brand-orange hover:underline">поддержку</a>.
+        </p>
+    </div>
+
+</body>
+
+</html>

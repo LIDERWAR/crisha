@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 import os
-import fitz # PyMuPDF
+import hashlib
+import logging
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
@@ -8,20 +9,15 @@ from rest_framework import generics
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from .services import extract_text_from_pdf, analyze_contract_with_ai
-from .models import Document
-from .serializers import DocumentSerializer
-import logging
+from .models import Document, Transaction, UserProfile
+from .serializers import DocumentSerializer, UserSerializer
+from .tasks import analyze_document_task
 
 logger = logging.getLogger(__name__)
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from rest_framework.permissions import AllowAny
-
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 
 class RegisterView(APIView):
@@ -61,7 +57,7 @@ class LogoutView(APIView):
 
 class HealthCheckView(APIView):
     def get(self, request):
-        return Response({"status": "ok", "message": "Crisha Backend is running"}, status=status.HTTP_200_OK)
+        return Response({"status": "ok", "message": "ContractCheck Backend is running"}, status=status.HTTP_200_OK)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ContractAnalysisView(APIView):
@@ -80,158 +76,34 @@ class ContractAnalysisView(APIView):
              return Response({"error": f"Unsupported file type. Supported: {', '.join(valid_extensions)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            print("--- НАЧАЛО ОБРАБОТКИ ДОКУМЕНТА ---")
-            
-            # 1. Сначала сохраняем документ
+            # 0. Check limits if user is authenticated
             user = request.user if request.user.is_authenticated else None
+            if user:
+                profile = user.profile
+                if profile.checks_remaining <= 0:
+                     return Response({
+                         "error": "Limit reached", 
+                         "details": "У вас закончились доступные проверки. Пожалуйста, обновите тариф."
+                     }, status=status.HTTP_403_FORBIDDEN)
+            
+            # 1. Сначала сохраняем документ со статусом pending
             try:
                 document = Document.objects.create(file=file_obj, user=user, status='pending')
-                print(f"--- Документ создан: ID {document.id} ---")
+                print(f"--- Document created: ID {document.id}. Triggering task. ---")
             except Exception as e:
-                 logger.error(f"Ошибка при создании документа: {e}")
-                 print(f"!!! Ошибка при создании документа: {e} !!!")
-                 return Response({"error": f"Ошибка базы данных: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                 logger.error(f"Error creating document: {e}")
+                 return Response({"error": f"Database error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # 2. Извлечение текста
-            try:
-                print(f"--- Начало извлечения текста ({file_ext}) ---")
-                
-                # В зависимости от расширения выбираем метод
-                from .services import extract_text_from_pdf, extract_text_from_docx, extract_text_from_txt, analyze_contract_with_ai, save_improved_document, convert_doc_to_docx
-                
-                text = None
-                
-                # Специальная обработка для .doc (конвертация)
-                if file_ext == '.doc':
-                    print("--- Обнаружен файл .doc, начинаем конвертацию ---")
-                    try:
-                        # Получаем путь к сохраненному файлу
-                        doc_path = document.file.path
-                        docx_path = convert_doc_to_docx(doc_path)
-                        
-                        if docx_path and os.path.exists(docx_path):
-                            print(f"--- Конвертация успешна: {docx_path} ---")
-                            # Читаем текст из нового .docx
-                            with open(docx_path, "rb") as f_docx:
-                                from io import BytesIO
-                                stream_docx = BytesIO(f_docx.read())
-                                text = extract_text_from_docx(stream_docx)
-                            
-                            # Опционально: обновить файл в модели на .docx
-                            # Но это требует открытия файла и сохранения его в поле FileField
-                            # Пока просто используем текст
-                        else:
-                            raise Exception("Не удалось конвертировать .doc в .docx (Word не установлен или ошибка COM)")
-                            
-                    except Exception as e:
-                        print(f"!!! Ошибка обработки .doc: {e} !!!")
-                        return Response({"error": f"Ошибка обработки .doc файла: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # 2. Trigger asynchronous task
+            analyze_document_task.delay(document.id)
 
-                else:
-                    # Стандартная обработка
-                    with document.file.open('rb') as f:
-                        from io import BytesIO
-                        file_content = f.read()
-                        stream = BytesIO(file_content)
-
-                        if file_ext == '.pdf':
-                            text = extract_text_from_pdf(stream)
-                        elif file_ext == '.docx':
-                            text = extract_text_from_docx(stream)
-                        elif file_ext == '.txt':
-                            text = extract_text_from_txt(stream)
-                
-                if text:
-                    print(f"--- Текст извлечен: Длина {len(text)} ---")
-                else:
-                    print(f"!!! Текст не извлечен ({file_ext}) !!!")
-
-            except Exception as e:
-                 logger.error(f"Ошибка извлечения текста: {e}")
-                 print(f"!!! Ошибка извлечения текста: {e} !!!")
-                 document.status = 'failed'
-                 document.summary = f"Ошибка извлечения текста: {str(e)}"
-                 document.save()
-                 serializer = DocumentSerializer(document)
-                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-            if not text:
-                 print("!!! Текст не извлечен !!!")
-                 document.status = 'failed'
-                 document.summary = "Не удалось извлечь текст. Файл может быть поврежден или не поддерживается."
-                 document.save()
-                 serializer = DocumentSerializer(document)
-                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-            # 3. Анализ
-            try:
-                print("--- Запуск AI анализа ---")
-                analysis_result = analyze_contract_with_ai(text)
-                print("--- AI анализ завершен ---")
-            except Exception as e:
-                logger.error(f"Ошибка AI: {e}")
-                print(f"!!! Ошибка AI: {e} !!!")
-                document.status = 'failed'
-                document.summary = f"Ошибка AI анализа: {str(e)}"
-                document.save()
-                serializer = DocumentSerializer(document)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-            if "error" in analysis_result:
-                print(f"!!! AI анализ вернул ошибку: {analysis_result} !!!")
-                document.status = 'failed'
-                document.summary = f"Ошибка AI: {analysis_result.get('error')}"
-                document.save()
-                serializer = DocumentSerializer(document)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-            # 4. Обновление документа
-            try:
-                print("--- Сохранение результатов ---")
-                document.status = 'processed'
-                document.score = analysis_result.get('score')
-                document.summary = analysis_result.get('summary')
-                document.risks = analysis_result.get('risks')
-                document.recommendations = analysis_result.get('recommendations')
-                
-                # Сохранение улучшенного файла
-                rewritten_text = analysis_result.get('rewritten_text')
-                if rewritten_text:
-                    print("--- Сохранение улучшенного документа ---")
-                    improved_content_file = save_improved_document(rewritten_text, document.file.name)
-                    document.improved_file.save(improved_content_file.name, improved_content_file, save=False)
-                
-                document.save()
-
-                print("--- Результаты сохранены ---")
-            except Exception as e:
-                logger.error(f"Ошибка сохранения результатов: {e}")
-                print(f"!!! Ошибка сохранения результатов: {e} !!!")
-                # Даже если сохранение деталей анализа не удалось, помечаем как ошибку
-                try:
-                    document.status = 'failed'
-                    document.summary = "Ошибка сохранения результатов анализа."
-                    document.save()
-                except:
-                    pass
-                # Возвращаем 201 с тем, что есть
-                serializer = DocumentSerializer(document)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-
-            # Return serialized data
+            # Return serialized data immediately (202 Accepted would be more semantic, but 201 is fine)
             serializer = DocumentSerializer(document)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Unexpected error in view: {e}")
-            print(f"!!! Непредвиденная ошибка в представлении: {e} !!!")
-            import traceback
-            traceback.print_exc()
-            return Response({"error": f"Непредвиденная ошибка сервера: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-from rest_framework.permissions import IsAuthenticated
+            return Response({"error": f"Unexpected server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class DocumentListView(generics.ListAPIView):
     serializer_class = DocumentSerializer
@@ -243,7 +115,6 @@ class DocumentListView(generics.ListAPIView):
             return Document.objects.filter(user=user).order_by('-uploaded_at')
         return Document.objects.none()
 
-
 class DocumentDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = DocumentSerializer
     permission_classes = [IsAuthenticated]
@@ -253,3 +124,128 @@ class DocumentDetailView(generics.RetrieveDestroyAPIView):
         if user.is_authenticated:
             return Document.objects.filter(user=user)
         return Document.objects.none()
+
+class UserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
+
+        if not current_password or not new_password:
+            return Response({"error": "Требуются старый и новый пароли"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        if not user.check_password(current_password):
+            return Response({"error": "Неверный текущий пароль"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(new_password) < 8:
+            return Response({"error": "Пароль должен быть не менее 8 символов"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+        return Response({"status": "ok", "message": "Пароль успешно изменен"}, status=status.HTTP_200_OK)
+
+# --- ROBOKASSA INTEGRATION ---
+
+PLANS = {
+    'pro': {'price': 990, 'checks': 20, 'name': 'PRO Plan'},
+    'business': {'price': 4900, 'checks': 100, 'name': 'Business Plan'},
+}
+
+class CreatePaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        plan_id = request.data.get('plan_id')
+        if plan_id not in PLANS:
+            return Response({"error": "Invalid plan"}, status=status.HTTP_400_BAD_REQUEST)
+
+        plan = PLANS[plan_id]
+        
+        # 1. Create pending transaction
+        transaction = Transaction.objects.create(
+            user=request.user,
+            amount=plan['price'],
+            checks_count=plan['checks'],
+            status='pending'
+        )
+
+        # 2. Prepare Robokassa parameters
+        merchant_login = os.getenv('ROBOKASSA_MERCHANT_LOGIN')
+        password_1 = os.getenv('ROBOKASSA_PASSWORD_1')
+        inv_id = transaction.id
+        out_sum = f"{plan['price']:.2f}"
+        
+        # Signature: MerchantLogin:OutSum:InvId:Password1
+        signature_str = f"{merchant_login}:{out_sum}:{inv_id}:{password_1}"
+        signature = hashlib.md5(signature_str.encode()).hexdigest()
+
+        # 3. Generate URL
+        is_test = os.getenv('ROBOKASSA_TEST_MODE', 'False').lower() == 'true'
+        base_url = "https://auth.robokassa.ru/Merchant/Index.aspx"
+        
+        payment_url = (
+            f"{base_url}?MerchantLogin={merchant_login}"
+            f"&OutSum={out_sum}"
+            f"&InvId={inv_id}"
+            f"&Description=Top-up {plan['checks']} checks for {request.user.username}"
+            f"&SignatureValue={signature}"
+        )
+        
+        if is_test:
+            payment_url += "&IsTest=1"
+
+        return Response({"payment_url": payment_url})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PaymentWebhookView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        # Robokassa sends: OutSum, InvId, SignatureValue, and custom fields
+        out_sum = request.data.get('OutSum')
+        inv_id = request.data.get('InvId')
+        signature_received = request.data.get('SignatureValue')
+        
+        password_2 = os.getenv('ROBOKASSA_PASSWORD_2')
+        
+        # Valid signature: OutSum:InvId:Password2
+        signature_str = f"{out_sum}:{inv_id}:{password_2}"
+        signature_calculated = hashlib.md5(signature_str.encode()).hexdigest()
+
+        if not signature_received or signature_received.lower() != signature_calculated.lower():
+            logger.error(f"Robokassa: Signature mismatch. Received: {signature_received}, Calculated: {signature_calculated}")
+            return Response("fail", status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            transaction = Transaction.objects.get(id=inv_id)
+            if transaction.status == 'pending':
+                transaction.status = 'completed'
+                transaction.save()
+
+                # Credit user profile
+                profile = transaction.user.profile
+                profile.checks_remaining += transaction.checks_count
+                
+                # Update tier if applicable
+                if transaction.checks_count >= 100:
+                    profile.subscription_tier = 'business'
+                elif transaction.checks_count >= 20:
+                    if profile.subscription_tier != 'business':
+                        profile.subscription_tier = 'pro'
+                
+                profile.save()
+                
+                logger.info(f"Robokassa: Success. Credited {transaction.checks_count} checks to {transaction.user.username}")
+            
+            return Response(f"OK{inv_id}") # Robokassa expects OK + InvId
+        except Transaction.DoesNotExist:
+            logger.error(f"Robokassa: Transaction {inv_id} not found")
+            return Response("fail", status=status.HTTP_404_NOT_FOUND)

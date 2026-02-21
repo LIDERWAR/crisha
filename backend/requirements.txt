@@ -6,4 +6,13 @@ pymupdf
 openai
 requests
 python-docx
-pywin32
+# pywin32 - только для Windows (конвертация .doc), НЕ устанавливать на Linux-сервере
+
+# Продакшн
+gunicorn>=21.0
+psycopg2-binary>=2.9
+
+# Celery + Redis
+celery>=5.3
+redis>=5.0
+django-celery-results>=2.5

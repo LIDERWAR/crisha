@@ -1,15 +1,50 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // БЕЗ auth.checkAuth - работаем без авторизации
+    let pollingTimer = null;
 
     // Пользователь
-    const userStr = localStorage.getItem('crisha_user');
-    if (userStr) {
-        const user = JSON.parse(userStr);
-        const nameElements = document.querySelectorAll('.user-name-display');
-        nameElements.forEach(el => el.textContent = user.username || 'User');
+    await loadUserInfo();
 
-        const emailElements = document.querySelectorAll('.user-email-display');
-        emailElements.forEach(el => el.textContent = user.email || 'Free Plan');
+    async function loadUserInfo() {
+        const token = localStorage.getItem('cc_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/user/info/', {
+                headers: {
+                    'Authorization': `Token ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+
+                // Update Name
+                const nameElements = document.querySelectorAll('.user-name-display');
+                nameElements.forEach(el => el.textContent = user.username || 'User');
+
+                // Update Subscription & Checks
+                const emailElements = document.querySelectorAll('.user-email-display');
+                const tierName = user.profile.subscription_tier.toUpperCase() + ' Plan';
+                emailElements.forEach(el => el.textContent = tierName);
+
+                // Update Remaining Checks Stat Card
+                const checksEl = document.querySelector('.checks-remaining-display') ||
+                    document.querySelector('.glass-card .text-3xl'); // Fallback to first stat card value
+                if (checksEl) {
+                    checksEl.textContent = user.profile.checks_remaining;
+                    checksEl.classList.add('checks-remaining-display'); // Add class for future reference
+                }
+
+                // Update Subscription badge in card
+                const badgeEl = document.querySelector('.subscription-badge-display');
+                if (badgeEl) {
+                    badgeEl.textContent = 'Тариф ' + user.profile.subscription_tier.charAt(0).toUpperCase() + user.profile.subscription_tier.slice(1);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user info:', error);
+        }
     }
 
     // Logout
@@ -102,10 +137,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     async function loadDocuments() {
-        const tableBody = document.querySelector('#documents-table tbody');
+        const tableBody = document.getElementById('documents-table-body');
         if (!tableBody) return;
 
-        const token = localStorage.getItem('crisha_token');
+        const token = localStorage.getItem('cc_token');
 
         if (!token) {
             tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Пожалуйста, <a href="login.html" class="text-brand-orange hover:underline">войдите</a>, чтобы видеть ваши документы.</td></tr>';
@@ -132,6 +167,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderTable(documents);
             updateStats(documents);
 
+            // Polling logic: if any document is pending, poll again in 5 seconds
+            const hasPending = documents.some(doc => doc.status === 'pending');
+            if (hasPending && !pollingTimer) {
+                console.log('--- Start polling for pending documents ---');
+                pollingTimer = setInterval(loadDocuments, 5000);
+            } else if (!hasPending && pollingTimer) {
+                console.log('--- Stop polling: all documents processed ---');
+                clearInterval(pollingTimer);
+                pollingTimer = null;
+                // Also refresh user info to show updated check count
+                await loadUserInfo();
+            }
+
         } catch (error) {
             console.error(error);
             tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Ошибка загрузки документов</td></tr>';
@@ -139,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderTable(documents) {
-        const tableBody = document.querySelector('#documents-table tbody');
+        const tableBody = document.getElementById('documents-table-body');
         tableBody.innerHTML = '';
 
         if (documents.length === 0) {
@@ -154,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td class="px-6 py-4 text-sm text-gray-400" data-label="Дата">${new Date(doc.uploaded_at).toLocaleDateString('ru-RU')}</td>
                 <td class="px-6 py-4" data-label="Статус">
                     <span class="px-3 py-1 text-xs rounded-full ${doc.status === 'processed' ? 'bg-green-500/20 text-green-400' : doc.status === 'failed' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}">
-                        ${doc.status === 'processed' ? 'Готов' : doc.status === 'failed' ? 'Ошибка' : 'Обработка'}
+                        ${doc.status === 'processed' ? 'Готов' : doc.status === 'failed' ? 'Ошибка' : '<span class="inline-block animate-spin mr-1">⌛</span> Обработка'}
                     </span>
                 </td>
                 <td class="px-6 py-4" data-label="Оценка">
@@ -203,7 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function deleteDocument(id) {
         if (!confirm('Вы уверены, что хотите удалить этот документ?')) return;
 
-        const token = localStorage.getItem('crisha_token');
+        const token = localStorage.getItem('cc_token');
         try {
             const response = await fetch(`http://127.0.0.1:8000/api/documents/${id}/`, {
                 method: 'DELETE',

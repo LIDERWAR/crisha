@@ -1,5 +1,18 @@
 from rest_framework import serializers
-from .models import Document
+from django.contrib.auth.models import User
+from .models import Document, UserProfile
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['subscription_tier', 'checks_remaining', 'total_checks_count']
+
+class UserSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer(read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'profile']
 
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:

@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (typeof auth !== 'undefined') {
                 state.token = auth.getToken();
-                const userStr = localStorage.getItem('crisha_user');
+                const userStr = localStorage.getItem('cc_user');
                 if (userStr) state.user = JSON.parse(userStr);
 
                 log(`Auth Status: ${state.token ? 'Logged In' : 'Guest'}`);
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const links = document.querySelectorAll('a');
         links.forEach(link => {
             if (link.textContent.trim() === 'Контакты' && link.getAttribute('href') === '#') {
-                link.href = 'mailto:support@crisha.ru';
+                link.href = 'mailto:support@contractcheck.ru';
                 link.title = 'Написать в поддержку';
             }
         });
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 handleDownload();
             }
             if (e.target.closest('#consult-btn')) {
-                window.location.href = 'mailto:support@crisha.ru?subject=Юридическая консультация';
+                window.location.href = 'mailto:support@contractcheck.ru?subject=Юридическая консультация';
             }
         });
     }
@@ -436,4 +436,52 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(checkScroll, 100);
         checkScroll();
     }
+
+    // --- PAYMENT INTEGRATION ---
+    window.startPayment = async function (plan_id) {
+        const token = localStorage.getItem('cc_token');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        try {
+            // Show loading state if needed
+            const btn = event?.target;
+            const originalText = btn ? btn.innerText : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Загрузка...';
+            }
+
+            const response = await fetch('http://127.0.0.1:8000/api/payment/create/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ plan_id })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.payment_url) {
+                    window.location.href = data.payment_url;
+                }
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Ошибка при создании платежа');
+            }
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            alert('Ошибка сети. Попробуйте позже.');
+        }
+    };
+
+    initAnimations();
 });

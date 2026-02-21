@@ -1,6 +1,23 @@
-const API_URL = 'http://127.0.0.1:8000/api';
+// Настройка URL API: в локальной разработке всегда целимся в порт 8000
+const API_URL = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+    ? 'http://127.0.0.1:8000/api'
+    : 'https://contractcheck.ru/api';
 
 const auth = {
+    // Вспомогательная функция для безопасного парсинга JSON
+    async safeJson(response) {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Ответ не является JSON:', text);
+            if (text.includes('<!DOCTYPE html>')) {
+                throw new Error('Ошибка сервера (получен HTML). Проверьте консоль браузера.');
+            }
+            throw new Error('Ошибка парсинга ответа сервера');
+        }
+    },
+
     async login(email, password) {
         try {
             const response = await fetch(`${API_URL}/auth/login/`, {
@@ -8,17 +25,17 @@ const auth = {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, username: email }),
             });
 
+            const data = await this.safeJson(response);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Login failed');
+                throw new Error(data.error || 'Ошибка входа');
             }
 
-            const data = await response.json();
-            localStorage.setItem('crisha_token', data.token);
-            localStorage.setItem('crisha_user', JSON.stringify({ username: data.username, email: data.email }));
+            localStorage.setItem('cc_token', data.token);
+            localStorage.setItem('cc_user', JSON.stringify({ username: data.username, email: data.email }));
             window.location.href = 'dashboard.html';
             return data;
         } catch (error) {
@@ -29,7 +46,6 @@ const auth = {
 
     async register(email, password) {
         try {
-            // For MVP strictness, we use email as username
             const response = await fetch(`${API_URL}/auth/register/`, {
                 method: 'POST',
                 headers: {
@@ -38,14 +54,14 @@ const auth = {
                 body: JSON.stringify({ email, password, username: email }),
             });
 
+            const data = await this.safeJson(response);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Registration failed');
+                throw new Error(data.error || 'Ошибка регистрации');
             }
 
-            const data = await response.json();
-            localStorage.setItem('crisha_token', data.token);
-            localStorage.setItem('crisha_user', JSON.stringify({ username: data.username, email: data.email }));
+            localStorage.setItem('cc_token', data.token);
+            localStorage.setItem('cc_user', JSON.stringify({ username: data.username, email: data.email }));
             window.location.href = 'dashboard.html';
             return data;
         } catch (error) {
@@ -56,7 +72,6 @@ const auth = {
 
     async logout() {
         try {
-            // Try to notify backend, but don't block UI if it fails
             const token = this.getToken();
             if (token) {
                 await fetch(`${API_URL}/auth/logout/`, {
@@ -67,14 +82,14 @@ const auth = {
                 }).catch(err => console.warn('Logout API call failed:', err));
             }
         } finally {
-            localStorage.removeItem('crisha_token');
-            localStorage.removeItem('crisha_user');
+            localStorage.removeItem('cc_token');
+            localStorage.removeItem('cc_user');
             window.location.href = 'index.html';
         }
     },
 
     getToken() {
-        return localStorage.getItem('crisha_token');
+        return localStorage.getItem('cc_token');
     },
 
     checkAuth() {
@@ -83,10 +98,9 @@ const auth = {
         }
     },
 
-    // Helper for authenticated requests
     async fetchWithAuth(endpoint, options = {}) {
         const token = this.getToken();
-        if (!token) throw new Error('No token found');
+        if (!token) throw new Error('Токен не найден');
 
         const headers = {
             'Authorization': `Token ${token}`,
@@ -100,13 +114,8 @@ const auth = {
 
         if (response.status === 401) {
             console.error('!!! 401 UNAUTHORIZED !!!');
-            console.error('Token:', token);
-            console.error('Endpoint:', endpoint);
-            console.error('Response:', await response.clone().text());
-            alert('ОШИБКА 401! Проверьте консоль. НЕ делаю logout для отладки.');
-            // ВРЕМЕННО ОТКЛЮЧЕН для отладки:
-            // this.logout();
-            throw new Error('Unauthorized');
+            // В продакшене тут лучше делать logout, но для отладки пока оставим
+            throw new Error('Сессия истекла. Войдите заново.');
         }
 
         return response;
