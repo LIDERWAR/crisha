@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from .views import (
     HealthCheckView, ContractAnalysisView, DocumentListView, 
     RegisterView, LoginView, LogoutView, DocumentDetailView, 
@@ -17,4 +17,9 @@ urlpatterns = [
     path('documents/<int:pk>/', DocumentDetailView.as_view(), name='document_detail'),
     path('payment/create/', CreatePaymentView.as_view(), name='payment_create'),
     path('payment/webhook/', PaymentWebhookView.as_view(), name='payment_webhook'),
+    
+    # Social Auth
+    path('auth/', include('dj_rest_auth.urls')),
+    path('auth/registration/', include('dj_rest_auth.registration.urls')),
+    path('accounts/', include('allauth.urls')),
 ]

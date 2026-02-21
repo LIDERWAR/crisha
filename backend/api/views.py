@@ -63,6 +63,7 @@ class HealthCheckView(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class ContractAnalysisView(APIView):
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         file_obj = request.FILES.get('file')
@@ -77,16 +78,15 @@ class ContractAnalysisView(APIView):
              return Response({"error": f"Unsupported file type. Supported: {', '.join(valid_extensions)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 0. Check limits if user is authenticated
-            user = request.user if request.user.is_authenticated else None
-            if user:
-                # Use get_or_create to ensure profile exists
-                profile, created = UserProfile.objects.get_or_create(user=user)
-                if profile.checks_remaining <= 0:
-                     return Response({
-                         "error": "Limit reached", 
-                         "details": "У вас закончились доступные проверки. Пожалуйста, обновите тариф."
-                     }, status=status.HTTP_403_FORBIDDEN)
+            # 0. Check limits (user is guaranteed to be authenticated)
+            user = request.user
+            # Use get_or_create to ensure profile exists
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            if profile.checks_remaining <= 0:
+                 return Response({
+                     "error": "Limit reached", 
+                     "details": "У вас закончились доступные проверки. Пожалуйста, обновите тариф."
+                 }, status=status.HTTP_403_FORBIDDEN)
             
             # 1. Сначала сохраняем документ со статусом pending
             try:

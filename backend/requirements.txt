@@ -16,3 +16,7 @@ psycopg2-binary>=2.9
 celery>=5.3
 redis>=5.0
 django-celery-results>=2.5
+
+# Auth
+django-allauth>=0.61.1
+dj-rest-auth>=5.0.2

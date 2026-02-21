@@ -52,6 +52,15 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'django_celery_results',
+    
+    # Auth Allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.vk',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
 
     # Local
     'api',
@@ -76,6 +85,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -193,3 +203,23 @@ CELERY_TIMEZONE = TIME_ZONE
 # Установить False когда Redis запущен для настоящей асинхронной обработки
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
+
+# django-allauth settings
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# Settings for dj-rest-auth
+REST_AUTH = {
+    'USE_JWT': False,
+    'SESSION_LOGIN': False
+}
+

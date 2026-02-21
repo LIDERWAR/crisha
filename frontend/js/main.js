@@ -260,25 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Redirect logic
                 setTimeout(() => {
-                    // Check if we should redirect to dashboard or show modal (landing page behavior)
-                    // Original behavior was redirect to dashboard.
-                    // But we have a modal in index.html! Maybe we should show that instead?
-                    // User asked to "implement inactive buttons" which includes modal buttons.
-                    // If we redirect, we never see the modal.
-                    // Let's SHOW THE MODAL for Guest users or just generally on the landing page?
-                    // BUT: The original code redirected.
-                    // "window.location.href = '/frontend/dashboard.html';"
-
-                    // IF logged in -> Dashboard is better.
-                    // IF guest -> Maybe show modal with "Register to save" or just show result?
-                    // Let's stick to the existing redirect for consistency with previous logic, 
-                    // UNLESS the user wants the modal buttons to work on the landing page.
-                    // The modal exists in HTML (#results-section). 
-                    // Let's try to SHOW THE MODAL first, and offer "Go to Dashboard" there?
-
-                    // Actually, let's Redirect to Dashboard if logged in.
-                    // If not logged in, Show Modal?
-
                     if (state.token) {
                         window.location.href = 'dashboard.html';
                     } else {
@@ -288,6 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }, 1500);
 
+            } else if (response.status === 401 || response.status === 403) {
+                // Перенаправление неавторизованных пользователей или тех у кого нет доступов (лимиты) на логин/доп.страницу (сейчас только логин как запрошено для 401)
+                log('Unauthorized or forbidden access - Redirecting to login page', 'error');
+                if (intervalId) clearInterval(intervalId);
+                if (loadingState) loadingState.classList.add('hidden');
+                window.location.href = 'login.html';
             } else {
                 throw new Error(`Server error: ${response.status}`);
             }
